@@ -22,6 +22,7 @@ import {
   FiTrendingUp,
   FiUsers,
 } from '../../utils/icons';
+import api, { endpoints } from '../../services/api';
 
 interface VoteData {
   participantId: string;
@@ -40,13 +41,25 @@ interface VotingStats {
   peakVotingHour: string;
 }
 
+interface Campaign {
+  id: string;
+  title: string;
+}
+
 const VotingDashboard: React.FC = () => {
   const [voteData, setVoteData] = useState<VoteData[]>([]);
   const [votingStats, setVotingStats] = useState<VotingStats | null>(null);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState('all');
   const [timeRange, setTimeRange] = useState('7days');
   const [loading, setLoading] = useState(true);
   const [autoRefresh, setAutoRefresh] = useState(false);
+  const [hourlyData, setHourlyData] = useState<any[]>([]);
+  const [dailyData, setDailyData] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
 
   useEffect(() => {
     fetchVotingData();
@@ -56,82 +69,149 @@ const VotingDashboard: React.FC = () => {
     };
   }, [selectedCampaign, timeRange, autoRefresh]);
 
-  const fetchVotingData = async () => {
+  const fetchCampaigns = async () => {
     try {
-      // Simulated data
-      const mockVoteData: VoteData[] = [
-        {
-          participantId: '1',
-          participantName: 'Maria Silva',
-          votes: 4532,
-          percentage: 28.5,
-          trend: 'up',
-        },
-        {
-          participantId: '2',
-          participantName: 'João Santos',
-          votes: 3890,
-          percentage: 24.5,
-          trend: 'up',
-        },
-        {
-          participantId: '3',
-          participantName: 'Ana Costa',
-          votes: 3456,
-          percentage: 21.7,
-          trend: 'down',
-        },
-        {
-          participantId: '4',
-          participantName: 'Pedro Oliveira',
-          votes: 2234,
-          percentage: 14.1,
-          trend: 'stable',
-        },
-        {
-          participantId: '5',
-          participantName: 'Lucia Ferreira',
-          votes: 1788,
-          percentage: 11.2,
-          trend: 'up',
-        },
-      ];
-
-      const mockStats: VotingStats = {
-        totalVotes: 15900,
-        votesToday: 1234,
-        uniqueVoters: 8567,
-        averageVotesPerDay: 2271,
-        peakVotingHour: '20:00',
-      };
-
-      setVoteData(mockVoteData);
-      setVotingStats(mockStats);
-      setLoading(false);
+      const response = await api.get(endpoints.campaigns.list);
+      const activeCampaigns = response.data.filter((c: any) => c.is_active);
+      setCampaigns(activeCampaigns);
     } catch (error) {
-      console.error('Error fetching voting data:', error);
-      setLoading(false);
+      console.error('Error fetching campaigns:', error);
     }
   };
 
-  const hourlyVotingData = [
-    { hour: '00h', votes: 45 },
-    { hour: '04h', votes: 23 },
-    { hour: '08h', votes: 156 },
-    { hour: '12h', votes: 234 },
-    { hour: '16h', votes: 345 },
-    { hour: '20h', votes: 567 },
-  ];
+  const fetchVotingData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch participants and votes
+      let participantsEndpoint = endpoints.participants.list;
+      let votesEndpoint = endpoints.votes?.list || '/votes';
+      
+      // If specific campaign selected
+      if (selectedCampaign !== 'all') {
+        participantsEndpoint = endpoints.participants.byCampaign(selectedCampaign);
+        votesEndpoint = endpoints.voting.votesByCampaign(selectedCampaign);
+      }
 
-  const dailyVotingData = [
-    { day: 'Seg', votes: 2345 },
-    { day: 'Ter', votes: 2567 },
-    { day: 'Qua', votes: 2234 },
-    { day: 'Qui', votes: 2890 },
-    { day: 'Sex', votes: 3456 },
-    { day: 'Sáb', votes: 1234 },
-    { day: 'Dom', votes: 890 },
-  ];
+      const [participantsRes, votesRes] = await Promise.all([
+        api.get(participantsEndpoint).catch(() => ({ data: [] })),
+        api.get(votesEndpoint).catch(() => ({ data: [] }))
+      ]);
+
+      const participants = Array.isArray(participantsRes.data) ? participantsRes.data : [];
+      const votes = Array.isArray(votesRes.data) ? votesRes.data : [];
+
+      // Calculate votes per participant
+      const votesByParticipant: { [key: string]: number } = {};
+      const totalVoteCount = votes.length;
+
+      votes.forEach((vote: any) => {
+        const participantId = vote.participant_id || vote.participantId;
+        if (participantId) {
+          votesByParticipant[participantId] = (votesByParticipant[participantId] || 0) + 1;
+        }
+      });
+
+      // Create vote data for each participant
+      const processedVoteData: VoteData[] = participants
+        .map((participant: any) => {
+          const voteCount = votesByParticipant[participant.id] || 0;
+          return {
+            participantId: participant.id,
+            participantName: participant.name || 'Sem nome',
+            votes: voteCount,
+            percentage: totalVoteCount > 0 ? (voteCount / totalVoteCount) * 100 : 0,
+            trend: 'stable' as const, // Would need historical data to calculate trend
+            photo: participant.photo_url
+          };
+        })
+        .sort((a, b) => b.votes - a.votes);
+
+      // Calculate stats
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todayVotes = votes.filter((v: any) => {
+        if (!v.created_at) return false;
+        return new Date(v.created_at) >= today;
+      }).length;
+
+      // Get unique voters (would need voter_id field)
+      const uniqueVoters = new Set(votes.map((v: any) => v.voter_id || v.id)).size;
+
+      // Calculate average votes per day
+      const firstVoteDate = votes.length > 0 && votes[0].created_at 
+        ? new Date(votes[0].created_at) 
+        : new Date();
+      const daysSinceStart = Math.max(1, Math.ceil((today.getTime() - firstVoteDate.getTime()) / (1000 * 60 * 60 * 24)));
+      const averageVotesPerDay = Math.floor(totalVoteCount / daysSinceStart);
+
+      // Find peak voting hour (simplified - would need proper aggregation)
+      const votesByHour: { [hour: number]: number } = {};
+      votes.forEach((vote: any) => {
+        if (vote.created_at) {
+          const hour = new Date(vote.created_at).getHours();
+          votesByHour[hour] = (votesByHour[hour] || 0) + 1;
+        }
+      });
+      
+      const peakHour = Object.entries(votesByHour).reduce(
+        (max, [hour, count]) => count > max.count ? { hour: parseInt(hour), count } : max,
+        { hour: 12, count: 0 }
+      ).hour;
+
+      const stats: VotingStats = {
+        totalVotes: totalVoteCount,
+        votesToday: todayVotes,
+        uniqueVoters: uniqueVoters,
+        averageVotesPerDay: averageVotesPerDay,
+        peakVotingHour: `${peakHour}:00`
+      };
+
+      // Process hourly data for chart
+      const hourlyChartData = Array.from({ length: 6 }, (_, i) => {
+        const hour = i * 4;
+        return {
+          hour: `${hour.toString().padStart(2, '0')}h`,
+          votes: votesByHour[hour] || 0
+        };
+      });
+
+      // Process daily data for chart
+      const dailyChartData = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'].map((day, index) => {
+        const dayVotes = votes.filter((v: any) => {
+          if (!v.created_at) return false;
+          return new Date(v.created_at).getDay() === index;
+        }).length;
+        
+        return {
+          day,
+          votes: dayVotes
+        };
+      });
+
+      setVoteData(processedVoteData);
+      setVotingStats(stats);
+      setHourlyData(hourlyChartData);
+      setDailyData(dailyChartData);
+      
+    } catch (error) {
+      console.error('Error fetching voting data:', error);
+      
+      // Set empty data on error
+      setVoteData([]);
+      setVotingStats({
+        totalVotes: 0,
+        votesToday: 0,
+        uniqueVoters: 0,
+        averageVotesPerDay: 0,
+        peakVotingHour: '00:00'
+      });
+      
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -148,37 +228,45 @@ const VotingDashboard: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Dashboard de Votação</h1>
-          <p className="text-gray-600">Acompanhe os resultados em tempo real</p>
+          <h1 className="text-2xl font-bold text-gray-800">Painel de Votação</h1>
+          <p className="text-gray-600">Acompanhe as votações em tempo real</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center gap-4">
+          {/* Campaign Filter */}
           <select
             value={selectedCampaign}
             onChange={(e) => setSelectedCampaign(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="all">Todas as Campanhas</option>
-            <option value="1">Educação para Todos</option>
-            <option value="2">Saúde em Primeiro Lugar</option>
+            {campaigns.map((campaign) => (
+              <option key={campaign.id} value={campaign.id}>
+                {campaign.title}
+              </option>
+            ))}
           </select>
+
+          {/* Time Range Filter */}
           <select
             value={timeRange}
             onChange={(e) => setTimeRange(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
           >
             <option value="today">Hoje</option>
             <option value="7days">Últimos 7 dias</option>
             <option value="30days">Últimos 30 dias</option>
             <option value="all">Todo período</option>
           </select>
+
+          {/* Auto Refresh Toggle */}
           <button
             onClick={() => setAutoRefresh(!autoRefresh)}
             className={`p-2 rounded-lg transition-colors ${
               autoRefresh
-                ? 'bg-green-500 text-white'
+                ? 'bg-purple-600 text-white'
                 : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
             }`}
-            title={autoRefresh ? 'Auto-refresh ativado' : 'Ativar auto-refresh'}
+            title="Auto-atualização"
           >
             <FiRefreshCw className={`w-5 h-5 ${autoRefresh ? 'animate-spin' : ''}`} />
           </button>
@@ -188,127 +276,143 @@ const VotingDashboard: React.FC = () => {
       {/* Stats Cards */}
       {votingStats && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div className="bg-white rounded-lg shadow-md p-4">
+          <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total de Votos</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {votingStats.totalVotes.toLocaleString()}
+                  {votingStats.totalVotes.toLocaleString('pt-BR')}
                 </p>
               </div>
-              <FiBarChart className="w-8 h-8 text-purple-500 opacity-30" />
+              <FiBarChart className="w-8 h-8 text-purple-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-4">
+
+          <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Votos Hoje</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {votingStats.votesToday.toLocaleString()}
+                  {votingStats.votesToday.toLocaleString('pt-BR')}
                 </p>
               </div>
-              <FiTrendingUp className="w-8 h-8 text-green-500 opacity-30" />
+              <FiTrendingUp className="w-8 h-8 text-blue-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-4">
+
+          <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Votantes Únicos</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {votingStats.uniqueVoters.toLocaleString()}
+                  {votingStats.uniqueVoters.toLocaleString('pt-BR')}
                 </p>
               </div>
-              <FiUsers className="w-8 h-8 text-blue-500 opacity-30" />
+              <FiUsers className="w-8 h-8 text-green-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-4">
+
+          <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Média/Dia</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {votingStats.averageVotesPerDay.toLocaleString()}
+                  {votingStats.averageVotesPerDay.toLocaleString('pt-BR')}
                 </p>
               </div>
-              <FiBarChart className="w-8 h-8 text-orange-500 opacity-30" />
+              <FiTrendingUp className="w-8 h-8 text-orange-500" />
             </div>
           </div>
-          <div className="bg-white rounded-lg shadow-md p-4">
+
+          <div className="bg-white rounded-lg shadow-md p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Pico de Votação</p>
+                <p className="text-sm text-gray-600">Horário Pico</p>
                 <p className="text-2xl font-bold text-gray-900">{votingStats.peakVotingHour}</p>
               </div>
-              <FiClock className="w-8 h-8 text-red-500 opacity-30" />
+              <FiClock className="w-8 h-8 text-red-500" />
             </div>
           </div>
         </div>
       )}
 
-      {/* Main Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Top Participants */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Top 5 Participantes</h3>
-          <div className="space-y-4">
-            {voteData.map((participant, index) => (
-              <div key={participant.participantId} className="flex items-center">
-                <div className="w-8 text-center font-bold text-gray-600">{index + 1}</div>
-                <div className="flex-1 mx-4">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-gray-900">
-                      {participant.participantName}
-                    </span>
-                    <span className="text-sm text-gray-600">
-                      {participant.votes.toLocaleString()} votos
+      {/* Main Content */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Live Ranking */}
+        <div className="lg:col-span-2 bg-white rounded-lg shadow-md p-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Ranking Ao Vivo</h3>
+          {voteData.length > 0 ? (
+            <div className="space-y-4">
+              {voteData.slice(0, 10).map((participant, index) => (
+                <div key={participant.participantId} className="flex items-center space-x-4">
+                  <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center">
+                    <span className={`text-lg font-bold ${index < 3 ? 'text-purple-600' : 'text-gray-500'}`}>
+                      {index + 1}º
                     </span>
                   </div>
-                  <div className="w-full bg-gray-200 rounded-full h-6">
-                    <div
-                      className="bg-gradient-to-r from-purple-500 to-indigo-500 h-6 rounded-full flex items-center justify-center text-white text-xs font-semibold"
-                      style={{ width: `${participant.percentage}%` }}
-                    >
-                      {participant.percentage}%
+                  <div className="flex-grow">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-medium text-gray-800">{participant.participantName}</span>
+                      <div className="flex items-center space-x-2">
+                        <span className="text-sm font-semibold text-gray-700">
+                          {participant.votes.toLocaleString('pt-BR')} votos
+                        </span>
+                        {participant.trend === 'up' && (
+                          <span className="text-green-500">↑</span>
+                        )}
+                        {participant.trend === 'down' && (
+                          <span className="text-red-500">↓</span>
+                        )}
+                      </div>
                     </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div
+                        className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${participant.percentage}%` }}
+                      />
+                    </div>
+                    <span className="text-xs text-gray-500">
+                      {participant.percentage.toFixed(1)}% dos votos
+                    </span>
                   </div>
                 </div>
-                <div className="ml-2">
-                  {participant.trend === 'up' && (
-                    <span className="text-green-500">↑</span>
-                  )}
-                  {participant.trend === 'down' && (
-                    <span className="text-red-500">↓</span>
-                  )}
-                  {participant.trend === 'stable' && (
-                    <span className="text-gray-500">→</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-gray-500">
+              Nenhum voto registrado ainda
+            </div>
+          )}
         </div>
 
         {/* Vote Distribution Pie Chart */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Distribuição de Votos</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={voteData}
-                cx="50%"
-                cy="50%"
-                labelLine={false}
-                label={({ participantName, percentage }) => `${participantName} (${percentage}%)`}
-                outerRadius={100}
-                fill="#8884d8"
-                dataKey="votes"
-              >
-                {voteData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip />
-            </PieChart>
-          </ResponsiveContainer>
+          {voteData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={voteData.slice(0, 5)}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ participantName, percentage }) => `${participantName.split(' ')[0]} ${percentage.toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="votes"
+                >
+                  {voteData.slice(0, 5).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-[300px] text-gray-500">
+              Sem dados disponíveis
+            </div>
+          )}
         </div>
       </div>
 
@@ -316,29 +420,23 @@ const VotingDashboard: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hourly Voting */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Votação por Hora</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={hourlyVotingData}>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Votos por Hora</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={hourlyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="hour" />
               <YAxis />
               <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="votes"
-                stroke="#8b5cf6"
-                strokeWidth={2}
-                dot={{ fill: '#8b5cf6', r: 4 }}
-              />
+              <Line type="monotone" dataKey="votes" stroke="#8b5cf6" strokeWidth={2} />
             </LineChart>
           </ResponsiveContainer>
         </div>
 
         {/* Daily Voting */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Votação por Dia</h3>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={dailyVotingData}>
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">Votos por Dia da Semana</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={dailyData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="day" />
               <YAxis />
@@ -349,35 +447,10 @@ const VotingDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Recent Votes */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Votos Recentes</h3>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="text-xs text-gray-700 uppercase bg-gray-50">
-              <tr>
-                <th className="px-4 py-2 text-left">Horário</th>
-                <th className="px-4 py-2 text-left">Votante</th>
-                <th className="px-4 py-2 text-left">Participante</th>
-                <th className="px-4 py-2 text-left">Campanha</th>
-                <th className="px-4 py-2 text-left">IP</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <tr key={i} className="hover:bg-gray-50">
-                  <td className="px-4 py-2 text-sm">
-                    {format(new Date(), 'HH:mm:ss', { locale: ptBR })}
-                  </td>
-                  <td className="px-4 py-2 text-sm">user{i}@email.com</td>
-                  <td className="px-4 py-2 text-sm">Maria Silva</td>
-                  <td className="px-4 py-2 text-sm">Educação para Todos</td>
-                  <td className="px-4 py-2 text-sm">192.168.1.{i}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+      {/* Last Updated */}
+      <div className="text-center text-sm text-gray-500">
+        Última atualização: {format(new Date(), "dd 'de' MMMM 'às' HH:mm:ss", { locale: ptBR })}
+        {autoRefresh && <span className="ml-2">(Atualizando a cada 30 segundos)</span>}
       </div>
     </div>
   );

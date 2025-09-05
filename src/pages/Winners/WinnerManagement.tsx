@@ -3,6 +3,7 @@ import { FiAward, FiCalendar, FiUser, FiCheckCircle } from '../../utils/icons';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import api, { endpoints } from '../../services/api';
 
 interface Winner {
   id: string;
@@ -17,77 +18,117 @@ interface Winner {
   status: 'pending' | 'announced' | 'claimed';
 }
 
+interface Campaign {
+  id: string;
+  title: string;
+  is_active: boolean;
+  end_date?: string;
+}
+
+interface Participant {
+  id: string;
+  name: string;
+  campaign_id: string;
+  votes_count?: number;
+}
+
 const WinnerManagement: React.FC = () => {
   const [winners, setWinners] = useState<Winner[]>([]);
   const [selectedCampaign, setSelectedCampaign] = useState('');
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string }[]>([]);
+  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeclareModal, setShowDeclareModal] = useState(false);
+  const [campaignParticipants, setCampaignParticipants] = useState<Participant[]>([]);
 
   useEffect(() => {
-    fetchWinners();
     fetchCampaigns();
+    fetchWinners();
   }, []);
+
+  useEffect(() => {
+    if (selectedCampaign) {
+      fetchCampaignParticipants(selectedCampaign);
+    }
+  }, [selectedCampaign]);
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await api.get(endpoints.campaigns.list);
+      setCampaigns(response.data);
+    } catch (error) {
+      console.error('Error fetching campaigns:', error);
+      toast.error('Erro ao carregar campanhas');
+    }
+  };
 
   const fetchWinners = async () => {
     try {
-      // Simulated data
-      const mockWinners: Winner[] = [
-        {
-          id: '1',
-          participantId: 'p1',
-          participantName: 'Maria Silva',
-          campaignId: 'c1',
-          campaignName: 'Educação para Todos',
-          position: 1,
-          votes: 4532,
-          prize: 'R$ 10.000',
-          announcedDate: '2024-01-30',
-          status: 'announced',
-        },
-        {
-          id: '2',
-          participantId: 'p2',
-          participantName: 'João Santos',
-          campaignId: 'c1',
-          campaignName: 'Educação para Todos',
-          position: 2,
-          votes: 3890,
-          prize: 'R$ 5.000',
-          announcedDate: '2024-01-30',
-          status: 'announced',
-        },
-        {
-          id: '3',
-          participantId: 'p3',
-          participantName: 'Ana Costa',
-          campaignId: 'c1',
-          campaignName: 'Educação para Todos',
-          position: 3,
-          votes: 3456,
-          prize: 'R$ 2.000',
-          announcedDate: '2024-01-30',
-          status: 'claimed',
-        },
-      ];
-      setWinners(mockWinners);
-      setLoading(false);
+      setLoading(true);
+      
+      // Fetch winners from API
+      const winnersRes = await api.get(endpoints.winners.list).catch(() => ({ data: [] }));
+      const campaignsRes = await api.get(endpoints.campaigns.list).catch(() => ({ data: [] }));
+      const participantsRes = await api.get(endpoints.participants.list).catch(() => ({ data: [] }));
+      
+      const winnersData = Array.isArray(winnersRes.data) ? winnersRes.data : [];
+      const campaignsData = Array.isArray(campaignsRes.data) ? campaignsRes.data : [];
+      const participantsData = Array.isArray(participantsRes.data) ? participantsRes.data : [];
+      
+      // Map winners with campaign and participant names
+      const processedWinners: Winner[] = winnersData.map((winner: any) => {
+        const campaign = campaignsData.find((c: any) => c.id === winner.campaign_id);
+        const participant = participantsData.find((p: any) => p.id === winner.participant_id);
+        
+        return {
+          id: winner.id,
+          participantId: winner.participant_id,
+          participantName: participant?.name || 'Unknown',
+          campaignId: winner.campaign_id,
+          campaignName: campaign?.title || 'Unknown Campaign',
+          position: winner.position || 1,
+          votes: winner.votes_count || 0,
+          prize: winner.prize || 'N/A',
+          announcedDate: winner.announced_at || winner.created_at,
+          status: winner.status || 'announced'
+        };
+      });
+      
+      setWinners(processedWinners);
     } catch (error) {
       console.error('Error fetching winners:', error);
+      toast.error('Erro ao carregar vencedores');
+    } finally {
       setLoading(false);
     }
   };
 
-  const fetchCampaigns = async () => {
+  const fetchCampaignParticipants = async (campaignId: string) => {
     try {
-      const mockCampaigns = [
-        { id: 'c1', name: 'Educação para Todos' },
-        { id: 'c2', name: 'Saúde em Primeiro Lugar' },
-        { id: 'c3', name: 'Meio Ambiente Sustentável' },
-      ];
-      setCampaigns(mockCampaigns);
+      // Fetch participants for the selected campaign
+      const participantsRes = await api.get(endpoints.participants.byCampaign(campaignId)).catch(() => ({ data: [] }));
+      const votesRes = await api.get(endpoints.voting.votesByCampaign(campaignId)).catch(() => ({ data: [] }));
+      
+      const participants = Array.isArray(participantsRes.data) ? participantsRes.data : [];
+      const votes = Array.isArray(votesRes.data) ? votesRes.data : [];
+      
+      // Count votes per participant
+      const votesByParticipant: { [key: string]: number } = {};
+      votes.forEach((vote: any) => {
+        const participantId = vote.participant_id;
+        if (participantId) {
+          votesByParticipant[participantId] = (votesByParticipant[participantId] || 0) + 1;
+        }
+      });
+      
+      // Add vote count to participants and sort by votes
+      const participantsWithVotes = participants.map((p: any) => ({
+        ...p,
+        votes_count: votesByParticipant[p.id] || 0
+      })).sort((a: any, b: any) => b.votes_count - a.votes_count);
+      
+      setCampaignParticipants(participantsWithVotes);
     } catch (error) {
-      console.error('Error fetching campaigns:', error);
+      console.error('Error fetching campaign participants:', error);
     }
   };
 
@@ -97,53 +138,80 @@ const WinnerManagement: React.FC = () => {
       return;
     }
     
+    if (campaignParticipants.length === 0) {
+      toast.error('Não há participantes nesta campanha');
+      return;
+    }
+    
     try {
-      // API call to declare winners
+      // Get top 3 participants as winners
+      const top3 = campaignParticipants.slice(0, 3);
+      const prizes = ['R$ 10.000', 'R$ 5.000', 'R$ 2.000'];
+      
+      // Create winner records
+      for (let i = 0; i < top3.length; i++) {
+        const participant = top3[i];
+        const winnerData = {
+          campaign_id: selectedCampaign,
+          participant_id: participant.id,
+          position: i + 1,
+          votes_count: participant.votes_count,
+          prize: prizes[i],
+          status: 'announced'
+        };
+        
+        // Post to API
+        await api.post(endpoints.winners.declare, winnerData).catch((error) => {
+          console.error('Error declaring winner:', error);
+        });
+      }
+      
       toast.success('Vencedores declarados com sucesso!');
       setShowDeclareModal(false);
-      fetchWinners();
+      fetchWinners(); // Refresh winners list
     } catch (error) {
+      console.error('Error declaring winners:', error);
       toast.error('Erro ao declarar vencedores');
-    }
-  };
-
-  const handleAnnounceWinner = async (winnerId: string) => {
-    try {
-      // API call to announce winner
-      setWinners(winners.map(w => 
-        w.id === winnerId ? { ...w, status: 'announced' } : w
-      ));
-      toast.success('Vencedor anunciado com sucesso!');
-    } catch (error) {
-      toast.error('Erro ao anunciar vencedor');
     }
   };
 
   const getStatusBadge = (status: string) => {
     const styles = {
       pending: 'bg-yellow-100 text-yellow-800',
-      announced: 'bg-blue-100 text-blue-800',
-      claimed: 'bg-green-100 text-green-800',
+      announced: 'bg-green-100 text-green-800',
+      claimed: 'bg-blue-100 text-blue-800',
     };
     const labels = {
       pending: 'Pendente',
       announced: 'Anunciado',
-      claimed: 'Reivindicado',
+      claimed: 'Resgatado',
     };
     return (
-      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status as keyof typeof styles]}`}>
+      <span
+        className={`px-2 py-1 text-xs font-semibold rounded-full ${
+          styles[status as keyof typeof styles]
+        }`}
+      >
         {labels[status as keyof typeof labels]}
       </span>
     );
   };
 
-  const getPositionMedal = (position: number) => {
-    const medals = {
-      1: '🥇',
-      2: '🥈',
-      3: '🥉',
+  const getPositionBadge = (position: number) => {
+    const colors = {
+      1: 'bg-yellow-400 text-yellow-900',
+      2: 'bg-gray-300 text-gray-800',
+      3: 'bg-orange-400 text-orange-900',
     };
-    return medals[position as keyof typeof medals] || `${position}º`;
+    return (
+      <div
+        className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${
+          colors[position as keyof typeof colors] || 'bg-gray-200 text-gray-600'
+        }`}
+      >
+        {position}º
+      </div>
+    );
   };
 
   if (loading) {
@@ -159,117 +227,108 @@ const WinnerManagement: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Gestão de Vencedores</h1>
+          <h1 className="text-2xl font-bold text-gray-800">Gerenciamento de Vencedores</h1>
           <p className="text-gray-600">Declare e gerencie os vencedores das campanhas</p>
         </div>
         <button
           onClick={() => setShowDeclareModal(true)}
-          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600"
+          className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2"
         >
-          <FiAward className="w-5 h-5 mr-2" />
+          <FiAward className="w-5 h-5" />
           Declarar Vencedores
         </button>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total de Vencedores</p>
-              <p className="text-2xl font-bold text-gray-900">{winners.length}</p>
-            </div>
-            <FiAward className="w-8 h-8 text-yellow-500 opacity-30" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Anunciados</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {winners.filter(w => w.status === 'announced').length}
-              </p>
-            </div>
-            <FiCheckCircle className="w-8 h-8 text-blue-500 opacity-30" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Prêmios Reivindicados</p>
-              <p className="text-2xl font-bold text-gray-900">
-                {winners.filter(w => w.status === 'claimed').length}
-              </p>
-            </div>
-            <FiAward className="w-8 h-8 text-green-500 opacity-30" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-md p-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Total em Prêmios</p>
-              <p className="text-2xl font-bold text-gray-900">R$ 17.000</p>
-            </div>
-            <span className="text-2xl">💰</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Winners by Campaign */}
-      <div className="bg-white rounded-lg shadow-md p-6">
-        <h3 className="text-lg font-semibold text-gray-800 mb-4">Vencedores por Campanha</h3>
-        
-        {/* Group winners by campaign */}
-        {campaigns.map(campaign => {
-          const campaignWinners = winners.filter(w => w.campaignId === campaign.id);
-          if (campaignWinners.length === 0) return null;
-          
-          return (
-            <div key={campaign.id} className="mb-6 last:mb-0">
-              <h4 className="text-md font-semibold text-gray-700 mb-3 flex items-center">
-                <FiAward className="w-5 h-5 mr-2 text-purple-500" />
-                {campaign.name}
-              </h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {campaignWinners.sort((a, b) => a.position - b.position).map(winner => (
-                  <div key={winner.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-2xl">{getPositionMedal(winner.position)}</span>
+      {/* Winners Table */}
+      <div className="bg-white rounded-lg shadow-md overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Posição
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Participante
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Campanha
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Votos
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Prêmio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Data Anúncio
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {winners.length > 0 ? (
+                winners.map((winner) => (
+                  <tr key={winner.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {getPositionBadge(winner.position)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <FiUser className="w-5 h-5 text-gray-400 mr-2" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {winner.participantName}
+                          </div>
+                          <div className="text-xs text-gray-500">ID: {winner.participantId}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm text-gray-900">{winner.campaignName}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-semibold text-gray-900">
+                        {winner.votes.toLocaleString('pt-BR')}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-green-600">{winner.prize}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center text-sm text-gray-500">
+                        <FiCalendar className="w-4 h-4 mr-1" />
+                        {winner.announcedDate ? 
+                          format(new Date(winner.announcedDate), 'dd/MM/yyyy', { locale: ptBR })
+                          : 'N/A'
+                        }
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
                       {getStatusBadge(winner.status)}
-                    </div>
-                    <h5 className="font-semibold text-gray-900">{winner.participantName}</h5>
-                    <p className="text-sm text-gray-600 mt-1">
-                      <FiUser className="inline w-4 h-4 mr-1" />
-                      {winner.votes.toLocaleString()} votos
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      <FiCalendar className="inline w-4 h-4 mr-1" />
-                      {format(new Date(winner.announcedDate), 'dd/MM/yyyy', { locale: ptBR })}
-                    </p>
-                    <div className="mt-3 pt-3 border-t">
-                      <p className="text-lg font-bold text-green-600">{winner.prize}</p>
-                    </div>
-                    {winner.status === 'pending' && (
-                      <button
-                        onClick={() => handleAnnounceWinner(winner.id)}
-                        className="mt-3 w-full px-3 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 text-sm"
-                      >
-                        Anunciar Vencedor
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan={7} className="px-6 py-12 text-center text-gray-500">
+                    Nenhum vencedor declarado ainda
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Declare Winners Modal */}
       {showDeclareModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Declarar Vencedores</h3>
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-xl font-bold text-gray-800 mb-4">Declarar Vencedores</h2>
+            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -278,33 +337,60 @@ const WinnerManagement: React.FC = () => {
                 <select
                   value={selectedCampaign}
                   onChange={(e) => setSelectedCampaign(e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
                 >
-                  <option value="">Escolha uma campanha...</option>
-                  {campaigns.map(campaign => (
-                    <option key={campaign.id} value={campaign.id}>{campaign.name}</option>
+                  <option value="">Selecione...</option>
+                  {campaigns.filter(c => !c.is_active).map((campaign) => (
+                    <option key={campaign.id} value={campaign.id}>
+                      {campaign.title}
+                    </option>
                   ))}
                 </select>
               </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <p className="text-sm text-yellow-800">
-                  <strong>Atenção:</strong> Esta ação irá declarar automaticamente os 3 participantes com mais votos como vencedores.
-                </p>
-              </div>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => setShowDeclareModal(false)}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleDeclareWinners}
-                  className="px-4 py-2 bg-gradient-to-r from-yellow-500 to-orange-500 text-white rounded-lg hover:from-yellow-600 hover:to-orange-600"
-                >
-                  Declarar Vencedores
-                </button>
-              </div>
+
+              {selectedCampaign && campaignParticipants.length > 0 && (
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 mb-2">
+                    Top 3 Participantes (serão declarados vencedores)
+                  </h3>
+                  <div className="space-y-2 max-h-48 overflow-y-auto">
+                    {campaignParticipants.slice(0, 3).map((participant, index) => (
+                      <div
+                        key={participant.id}
+                        className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                      >
+                        <div className="flex items-center">
+                          {getPositionBadge(index + 1)}
+                          <span className="ml-2 text-sm font-medium">{participant.name}</span>
+                        </div>
+                        <span className="text-sm text-gray-600">
+                          {participant.votes_count} votos
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  setShowDeclareModal(false);
+                  setSelectedCampaign('');
+                }}
+                className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeclareWinners}
+                disabled={!selectedCampaign}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+              >
+                <FiCheckCircle className="w-4 h-4" />
+                Declarar Vencedores
+              </button>
             </div>
           </div>
         </div>

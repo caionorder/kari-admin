@@ -122,8 +122,9 @@ const CampaignList: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta campanha?')) {
       try {
-        // await api.delete(endpoints.campaigns.delete(id));
+        await api.delete(endpoints.campaigns.delete(id));
         setCampaigns(campaigns.filter((c) => c.id !== id));
+        setFilteredCampaigns(filteredCampaigns.filter((c) => c.id !== id));
         toast.success('Campanha excluída com sucesso');
       } catch (error) {
         console.error('Error deleting campaign:', error);
