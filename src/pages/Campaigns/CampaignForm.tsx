@@ -88,16 +88,30 @@ const CampaignForm: React.FC = () => {
 
       // Handle image upload if present
       if (data.image && data.image.length > 0) {
-        const imageFile = data.image[0];
-        const reader = new FileReader();
-        
-        // Convert image to base64 for now (ideally should upload to storage)
-        const imageBase64 = await new Promise<string>((resolve) => {
-          reader.onloadend = () => resolve(reader.result as string);
-          reader.readAsDataURL(imageFile);
-        });
-        
-        campaignData.image_url = imageBase64;
+        try {
+          const imageFile = data.image[0];
+          const formData = new FormData();
+          formData.append('file', imageFile);
+          
+          // Upload image to server
+          const uploadResponse = await api.post(endpoints.upload.image, formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          
+          // Get the URL from upload response
+          if (uploadResponse.data && uploadResponse.data.url) {
+            // Convert relative URL to full URL for production
+            const baseUrl = window.location.protocol === 'https:' 
+              ? 'https://api.kariajuda.com' 
+              : '';
+            campaignData.image_url = baseUrl + uploadResponse.data.url;
+          }
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          toast.warning('Erro ao fazer upload da imagem, mas a campanha será salva');
+        }
       }
 
       if (isEdit) {

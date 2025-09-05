@@ -131,6 +131,11 @@ export const endpoints = {
     participants: '/statistics/participants',
     voting: '/statistics/voting',
   },
+  // Upload
+  upload: {
+    image: '/upload/image',
+    delete: (filename: string) => `/upload/image/${filename}`,
+  },
 };
 
 export default api;
