@@ -125,7 +125,7 @@ const VotingDashboard: React.FC = () => {
             photo: participant.photo_url
           };
         })
-        .sort((a, b) => b.votes - a.votes);
+        .sort((a: any, b: any) => b.votes - a.votes);
 
       // Calculate stats
       const today = new Date();

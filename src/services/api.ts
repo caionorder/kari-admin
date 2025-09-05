@@ -45,15 +45,27 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token and dynamic base URL
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // Get the API URL dynamically for each request
-    const apiUrl = getApiUrl();
+    // FORCE HTTPS in production
+    const hostname = window?.location?.hostname || 'localhost';
+    const isProduction = hostname.includes('kariajuda.com');
+    
+    // Always use HTTPS in production
+    const apiUrl = isProduction 
+      ? 'https://api.kariajuda.com/api/v1'
+      : getApiUrl();
     
     // Log for debugging
-    console.log('Request URL:', config.url, 'Base URL:', apiUrl);
+    console.log('Request URL:', config.url, 'Base URL:', apiUrl, 'Production:', isProduction);
     
-    // If the URL is relative, prepend the base URL
+    // Build full URL
     if (config.url && !config.url.startsWith('http')) {
       config.url = apiUrl + config.url;
+    }
+    
+    // CRITICAL: Force HTTPS if URL still has HTTP in production
+    if (isProduction && config.url && config.url.startsWith('http://')) {
+      config.url = config.url.replace('http://', 'https://');
+      console.warn('FORCED HTTPS:', config.url);
     }
     
     const token = localStorage.getItem('authToken');

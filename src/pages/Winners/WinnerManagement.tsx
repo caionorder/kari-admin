@@ -161,7 +161,7 @@ const WinnerManagement: React.FC = () => {
         };
         
         // Post to API
-        await api.post(endpoints.winners.declare, winnerData).catch((error) => {
+        await api.post(endpoints.winners.declare, winnerData).catch((error: any) => {
           console.error('Error declaring winner:', error);
         });
       }
