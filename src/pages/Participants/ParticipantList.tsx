@@ -2,6 +2,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import DataTable from '../../components/common/DataTable';
+import api, { endpoints } from '../../services/api';
 import { FiAward, FiCalendar, FiMail, FiPhone, FiSearch } from '../../utils/icons';
 
 interface Participant {
@@ -37,59 +38,65 @@ const ParticipantList: React.FC = () => {
 
   const fetchParticipants = async () => {
     try {
-      // Simulated data - replace with actual API call
-      const mockData: Participant[] = [
-        {
-          id: '1',
-          name: 'Maria Silva',
-          email: 'maria.silva@email.com',
-          phone: '(11) 98765-4321',
-          campaignId: '1',
-          campaignName: 'Educação para Todos',
-          registrationDate: '2024-01-20',
-          votesReceived: 234,
-          status: 'active',
-        },
-        {
-          id: '2',
-          name: 'João Santos',
-          email: 'joao.santos@email.com',
-          phone: '(21) 91234-5678',
-          campaignId: '1',
-          campaignName: 'Educação para Todos',
-          registrationDate: '2024-01-22',
-          votesReceived: 189,
-          status: 'active',
-        },
-        {
-          id: '3',
-          name: 'Ana Costa',
-          email: 'ana.costa@email.com',
-          phone: '(31) 99876-5432',
-          campaignId: '2',
-          campaignName: 'Saúde em Primeiro Lugar',
-          registrationDate: '2024-02-05',
-          votesReceived: 456,
-          status: 'winner',
-        },
-      ];
-      setParticipants(mockData);
-      setLoading(false);
+      setLoading(true);
+      
+      // Fetch participants, campaigns and votes from API
+      const [participantsRes, campaignsRes, votesRes] = await Promise.all([
+        api.get(endpoints.participants.list).catch(() => ({ data: [] })),
+        api.get(endpoints.campaigns.list).catch(() => ({ data: [] })),
+        api.get(endpoints.voting.votes).catch(() => ({ data: [] }))
+      ]);
+      
+      const participantsData = Array.isArray(participantsRes.data) ? participantsRes.data : [];
+      const campaignsData = Array.isArray(campaignsRes.data) ? campaignsRes.data : [];
+      const votesData = Array.isArray(votesRes.data) ? votesRes.data : [];
+      
+      // Count votes per participant
+      const votesByParticipant: { [key: string]: number } = {};
+      votesData.forEach((vote: any) => {
+        const participantId = vote.participant_id;
+        if (participantId) {
+          votesByParticipant[participantId] = (votesByParticipant[participantId] || 0) + 1;
+        }
+      });
+      
+      // Map participants with campaign names and vote counts
+      const processedParticipants: Participant[] = participantsData.map((participant: any) => {
+        const campaign = campaignsData.find((c: any) => c.id === participant.campaign_id);
+        const voteCount = votesByParticipant[participant.id] || 0;
+        
+        return {
+          id: participant.id,
+          name: participant.name || 'Sem nome',
+          email: participant.email || '',
+          phone: participant.phone || '',
+          campaignId: participant.campaign_id || '',
+          campaignName: campaign?.title || 'Campanha desconhecida',
+          registrationDate: participant.created_at || new Date().toISOString(),
+          votesReceived: voteCount,
+          status: voteCount > 100 ? 'winner' : 'active'
+        };
+      });
+      
+      setParticipants(processedParticipants);
     } catch (error) {
       console.error('Error fetching participants:', error);
+    } finally {
       setLoading(false);
     }
   };
 
   const fetchCampaigns = async () => {
     try {
-      // Simulated data - replace with actual API call
-      const mockCampaigns = [
-        { id: '1', name: 'Educação para Todos' },
-        { id: '2', name: 'Saúde em Primeiro Lugar' },
-        { id: '3', name: 'Meio Ambiente Sustentável' },
-      ];
-      setCampaigns(mockCampaigns);
+      const response = await api.get(endpoints.campaigns.list);
+      const campaignsData = Array.isArray(response.data) ? response.data : [];
+      
+      const processedCampaigns = campaignsData.map((campaign: any) => ({
+        id: campaign.id,
+        name: campaign.title || 'Sem título'
+      }));
+      
+      setCampaigns(processedCampaigns);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
     }

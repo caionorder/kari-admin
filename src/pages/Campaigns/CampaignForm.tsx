@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import api, { endpoints } from '../../services/api';
 import { FiCalendar, FiDollarSign, FiUpload, FiX } from '../../utils/icons';
 
 interface CampaignFormData {
@@ -50,42 +51,60 @@ const CampaignForm: React.FC = () => {
 
   const fetchCampaign = async () => {
     try {
-      // Simulated data - replace with actual API call
-      const mockData = {
-        title: 'Educação para Todos',
-        description: 'Campanha para arrecadar fundos para materiais escolares',
-        category: 'education',
-        startDate: '2024-01-15',
-        endDate: '2024-03-15',
-        targetAmount: 50000,
-      };
+      const response = await api.get(endpoints.campaigns.detail(id!));
+      const campaign = response.data;
 
-      Object.keys(mockData).forEach((key) => {
-        setValue(key as keyof CampaignFormData, mockData[key as keyof typeof mockData]);
-      });
+      // Map API fields to form fields
+      setValue('title', campaign.title);
+      setValue('description', campaign.description);
+      setValue('category', campaign.category || 'general');
+      setValue('startDate', campaign.start_date ? campaign.start_date.split('T')[0] : '');
+      setValue('endDate', campaign.end_date ? campaign.end_date.split('T')[0] : '');
+      setValue('targetAmount', campaign.target_amount || 0);
+      
+      if (campaign.image_url) {
+        setImagePreview(campaign.image_url);
+      }
     } catch (error) {
       console.error('Error fetching campaign:', error);
       toast.error('Erro ao carregar campanha');
+      navigate('/campaigns');
     }
   };
 
   const onSubmit = async (data: CampaignFormData) => {
     setLoading(true);
     try {
-      const formData = new FormData();
-      Object.keys(data).forEach((key) => {
-        if (key === 'image' && data.image && data.image.length > 0) {
-          formData.append('image', data.image[0]);
-        } else if (key !== 'image') {
-          formData.append(key, String(data[key as keyof CampaignFormData]));
-        }
-      });
+      // Prepare data for API
+      const campaignData: any = {
+        title: data.title,
+        description: data.description,
+        category: data.category,
+        start_date: data.startDate,
+        end_date: data.endDate,
+        target_amount: Number(data.targetAmount),
+        is_active: true
+      };
+
+      // Handle image upload if present
+      if (data.image && data.image.length > 0) {
+        const imageFile = data.image[0];
+        const reader = new FileReader();
+        
+        // Convert image to base64 for now (ideally should upload to storage)
+        const imageBase64 = await new Promise<string>((resolve) => {
+          reader.onloadend = () => resolve(reader.result as string);
+          reader.readAsDataURL(imageFile);
+        });
+        
+        campaignData.image_url = imageBase64;
+      }
 
       if (isEdit) {
-        // await api.put(endpoints.campaigns.update(id), formData);
+        await api.put(endpoints.campaigns.update(id!), campaignData);
         toast.success('Campanha atualizada com sucesso');
       } else {
-        // await api.post(endpoints.campaigns.create, formData);
+        await api.post(endpoints.campaigns.create, campaignData);
         toast.success('Campanha criada com sucesso');
       }
       navigate('/campaigns');

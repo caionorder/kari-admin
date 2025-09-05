@@ -7,11 +7,17 @@ const getApiUrl = (): string => {
     return process.env.REACT_APP_API_URL;
   }
   
-  // Check hostname for production
+  // Check hostname and protocol for production
   const hostname = window?.location?.hostname || 'localhost';
+  const protocol = window?.location?.protocol || 'http:';
   
-  // Production domain
-  if (hostname === 'admin.kariajuda.com') {
+  // Production domain - always use HTTPS
+  if (hostname === 'admin.kariajuda.com' || hostname === 'www.admin.kariajuda.com') {
+    return 'https://api.kariajuda.com/api/v1';
+  }
+  
+  // If accessing via HTTPS anywhere, use HTTPS for API
+  if (protocol === 'https:') {
     return 'https://api.kariajuda.com/api/v1';
   }
   
