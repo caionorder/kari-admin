@@ -3,6 +3,7 @@ import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import api, { endpoints } from '../../services/api';
 import {
   FiBarChart,
   FiEdit2,
@@ -47,53 +48,68 @@ const CampaignList: React.FC = () => {
 
   const fetchCampaigns = async () => {
     try {
-      // Simulated data - replace with actual API call
-      const mockData: Campaign[] = [
-        {
-          id: '1',
-          title: 'Educação para Todos',
-          description: 'Campanha para arrecadar fundos para materiais escolares',
-          image: '/images/campaign1.jpg',
-          startDate: '2024-01-15',
-          endDate: '2024-03-15',
-          status: 'active',
-          participantsCount: 45,
-          votesCount: 1234,
-          targetAmount: 50000,
-          raisedAmount: 32000,
-        },
-        {
-          id: '2',
-          title: 'Saúde em Primeiro Lugar',
-          description: 'Apoio para equipamentos hospitalares',
-          image: '/images/campaign2.jpg',
-          startDate: '2024-02-01',
-          endDate: '2024-04-01',
-          status: 'active',
-          participantsCount: 32,
-          votesCount: 890,
-          targetAmount: 100000,
-          raisedAmount: 45000,
-        },
-        {
-          id: '3',
-          title: 'Meio Ambiente Sustentável',
-          description: 'Projeto de reflorestamento urbano',
-          image: '/images/campaign3.jpg',
-          startDate: '2023-12-01',
-          endDate: '2024-01-31',
-          status: 'completed',
-          participantsCount: 67,
-          votesCount: 2345,
-          targetAmount: 30000,
-          raisedAmount: 30000,
-        },
-      ];
-      setCampaigns(mockData);
-      setLoading(false);
+      setLoading(true);
+      
+      // Fetch campaigns from API
+      const campaignsRes = await api.get(endpoints.campaigns.list);
+      const participantsRes = await api.get(endpoints.participants.list).catch(() => ({ data: [] }));
+      const votesRes = await api.get(endpoints.voting.votes).catch(() => ({ data: [] }));
+      
+      const campaignsData = Array.isArray(campaignsRes.data) ? campaignsRes.data : [];
+      const participantsData = Array.isArray(participantsRes.data) ? participantsRes.data : [];
+      const votesData = Array.isArray(votesRes.data) ? votesRes.data : [];
+      
+      // Count participants and votes per campaign
+      const participantsByCampaign: { [key: string]: number } = {};
+      const votesByCampaign: { [key: string]: number } = {};
+      
+      participantsData.forEach((participant: any) => {
+        const campaignId = participant.campaign_id;
+        if (campaignId) {
+          participantsByCampaign[campaignId] = (participantsByCampaign[campaignId] || 0) + 1;
+        }
+      });
+      
+      votesData.forEach((vote: any) => {
+        const participant = participantsData.find((p: any) => p.id === vote.participant_id);
+        if (participant?.campaign_id) {
+          votesByCampaign[participant.campaign_id] = (votesByCampaign[participant.campaign_id] || 0) + 1;
+        }
+      });
+      
+      // Map campaigns with real data
+      const processedCampaigns: Campaign[] = campaignsData.map((campaign: any) => {
+        const now = new Date();
+        const startDate = campaign.start_date ? new Date(campaign.start_date) : now;
+        const endDate = campaign.end_date ? new Date(campaign.end_date) : now;
+        
+        let status: 'active' | 'pending' | 'completed' = 'active';
+        if (campaign.is_active === false || endDate < now) {
+          status = 'completed';
+        } else if (startDate > now) {
+          status = 'pending';
+        }
+        
+        return {
+          id: campaign.id,
+          title: campaign.title || 'Sem título',
+          description: campaign.description || '',
+          image: campaign.image_url || '/placeholder.jpg',
+          startDate: campaign.start_date || new Date().toISOString(),
+          endDate: campaign.end_date || new Date().toISOString(),
+          status: status,
+          participantsCount: participantsByCampaign[campaign.id] || 0,
+          votesCount: votesByCampaign[campaign.id] || 0,
+          targetAmount: campaign.target_amount || 0,
+          raisedAmount: campaign.raised_amount || 0,
+        };
+      });
+      
+      setCampaigns(processedCampaigns);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
       toast.error('Erro ao carregar campanhas');
+    } finally {
       setLoading(false);
     }
   };
