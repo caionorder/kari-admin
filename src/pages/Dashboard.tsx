@@ -1,30 +1,27 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  FiUsers,
-  FiAward,
-  FiTrendingUp,
-  FiDollarSign,
-  FiArrowUp,
-  FiArrowDown,
-} from '../utils/icons';
-import {
-  LineChart,
-  Line,
-  AreaChart,
   Area,
-  BarChart,
+  AreaChart,
   Bar,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
+  BarChart,
   CartesianGrid,
-  Tooltip,
+  Cell,
   Legend,
+  Pie,
+  PieChart,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
-import api, { endpoints } from '../services/api';
+import {
+  FiArrowDown,
+  FiArrowUp,
+  FiAward,
+  FiDollarSign,
+  FiTrendingUp,
+  FiUsers,
+} from '../utils/icons';
 
 interface StatCard {
   title: string;

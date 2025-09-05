@@ -1,28 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import {
-  FiBarChart,
-  FiUsers,
-  FiTrendingUp,
-  FiClock,
-  FiRefreshCw,
-} from '../../utils/icons';
-import {
-  BarChart,
-  Bar,
-  LineChart,
-  Line,
-  PieChart,
-  Pie,
-  Cell,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from 'recharts';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
+} from 'recharts';
+import {
+  FiBarChart,
+  FiClock,
+  FiRefreshCw,
+  FiTrendingUp,
+  FiUsers,
+} from '../../utils/icons';
 
 interface VoteData {
   participantId: string;

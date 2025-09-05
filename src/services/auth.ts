@@ -25,20 +25,20 @@ class AuthService {
     const formData = new FormData();
     formData.append('username', credentials.username);
     formData.append('password', credentials.password);
-    
+
     const response = await api.post<AuthResponse>(endpoints.auth.login, formData, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
     });
     const { access_token } = response.data;
-    
+
     // Store token
     localStorage.setItem('authToken', access_token);
-    
+
     // Get user profile
     const userResponse = await api.get<User>(endpoints.auth.profile);
     const user = userResponse.data;
     localStorage.setItem('user', JSON.stringify(user));
-    
+
     return user;
   }
 

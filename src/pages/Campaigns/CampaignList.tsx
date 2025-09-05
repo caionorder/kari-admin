@@ -1,20 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import {
-  FiPlus,
-  FiEdit2,
-  FiTrash2,
-  FiEye,
-  FiSearch,
-  FiFilter,
-  FiCalendar,
-  FiUsers,
-  FiBarChart,
-} from '../../utils/icons';
-import api, { endpoints } from '../../services/api';
-import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import {
+  FiBarChart,
+  FiEdit2,
+  FiEye,
+  FiPlus,
+  FiSearch,
+  FiTrash2,
+  FiUsers
+} from '../../utils/icons';
 
 interface Campaign {
   id: string;

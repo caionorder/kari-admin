@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { FiUpload, FiX, FiCalendar, FiDollarSign } from '../../utils/icons';
-import api, { endpoints } from '../../services/api';
+import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { FiCalendar, FiDollarSign, FiUpload, FiX } from '../../utils/icons';
 
 interface CampaignFormData {
   title: string;
@@ -60,7 +59,7 @@ const CampaignForm: React.FC = () => {
         endDate: '2024-03-15',
         targetAmount: 50000,
       };
-      
+
       Object.keys(mockData).forEach((key) => {
         setValue(key as keyof CampaignFormData, mockData[key as keyof typeof mockData]);
       });
@@ -118,7 +117,7 @@ const CampaignForm: React.FC = () => {
         {/* Basic Information */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Informações Básicas</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -205,7 +204,7 @@ const CampaignForm: React.FC = () => {
         {/* Campaign Period */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Período da Campanha</h3>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -250,7 +249,7 @@ const CampaignForm: React.FC = () => {
         {/* Campaign Image */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Imagem da Campanha</h3>
-          
+
           {imagePreview ? (
             <div className="relative">
               <img

@@ -1,6 +1,6 @@
 import React from 'react';
-import { FiMenu, FiBell, FiSearch } from '../../utils/icons';
 import { useAuth } from '../../contexts/AuthContext';
+import { FiBell, FiMenu, FiSearch } from '../../utils/icons';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -43,11 +43,11 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar, title = 'Dashboard' }) =
           {/* User Avatar */}
           <div className="flex items-center space-x-3">
             <div className="hidden md:block text-right">
-              <p className="text-sm font-semibold text-gray-700">{user?.name}</p>
+              <p className="text-sm font-semibold text-gray-700">{user?.username}</p>
               <p className="text-xs text-gray-500">{user?.email}</p>
             </div>
             <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-full flex items-center justify-center text-white font-semibold">
-              {user?.name?.charAt(0).toUpperCase()}
+              {user?.username?.charAt(0).toUpperCase()}
             </div>
           </div>
         </div>

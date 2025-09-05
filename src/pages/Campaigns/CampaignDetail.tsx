@@ -1,29 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import {
-  FiCalendar,
-  FiUsers,
-  FiBarChart,
-  FiDollarSign,
-  FiEdit2,
-  FiArrowLeft,
-  FiTrendingUp,
-  FiAward,
-} from '../../utils/icons';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
   CartesianGrid,
-  Tooltip,
   Legend,
+  Line,
+  LineChart,
   ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis
 } from 'recharts';
+import {
+  FiArrowLeft,
+  FiAward,
+  FiBarChart,
+  FiCalendar,
+  FiDollarSign,
+  FiEdit2,
+  FiTrendingUp,
+  FiUsers,
+} from '../../utils/icons';
 
 interface Campaign {
   id: string;

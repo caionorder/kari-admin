@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { FiUser, FiMail, FiShield, FiEdit2, FiTrash2, FiPlus, FiLock } from '../../utils/icons';
+import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import DataTable from '../../components/common/DataTable';
+import { FiEdit2, FiLock, FiPlus, FiShield, FiTrash2, FiUser } from '../../utils/icons';
 
 interface User {
   id: string;
@@ -106,8 +106,8 @@ const UserManagement: React.FC = () => {
     try {
       if (editingUser) {
         // Update user
-        setUsers(users.map(u => 
-          u.id === editingUser.id 
+        setUsers(users.map(u =>
+          u.id === editingUser.id
             ? { ...u, ...formData }
             : u
         ));
@@ -145,8 +145,8 @@ const UserManagement: React.FC = () => {
 
   const handleToggleStatus = async (userId: string) => {
     try {
-      setUsers(users.map(u => 
-        u.id === userId 
+      setUsers(users.map(u =>
+        u.id === userId
           ? { ...u, status: u.status === 'active' ? 'inactive' : 'active' }
           : u
       ));

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { FiMail, FiLock, FiEye, FiEyeOff } from '../utils/icons';
-import { useAuth } from '../contexts/AuthContext';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
+import { useAuth } from '../contexts/AuthContext';
+import { FiEye, FiEyeOff, FiLock, FiMail } from '../utils/icons';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();

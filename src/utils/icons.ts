@@ -2,9 +2,6 @@
 // This file provides type-safe icon imports that work with React 19
 
 import * as FiIcons from 'react-icons/fi';
-import * as AiIcons from 'react-icons/ai';
-import * as BiIcons from 'react-icons/bi';
-import * as BsIcons from 'react-icons/bs';
 
 // Type assertion helper for React 19 compatibility
 const makeIcon = (Icon: any) => Icon as React.FC<{ className?: string }>;

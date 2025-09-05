@@ -1,9 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { FiSearch, FiFilter, FiMail, FiPhone, FiCalendar, FiAward } from '../../utils/icons';
-import DataTable from '../../components/common/DataTable';
-import api, { endpoints } from '../../services/api';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import React, { useEffect, useState } from 'react';
+import DataTable from '../../components/common/DataTable';
+import { FiAward, FiCalendar, FiMail, FiPhone, FiSearch } from '../../utils/icons';
 
 interface Participant {
   id: string;
