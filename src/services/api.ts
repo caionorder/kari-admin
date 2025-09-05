@@ -6,30 +6,27 @@ const getApiUrl = (): string => {
     return process.env.REACT_APP_API_URL;
   }
 
-  // Check if we're running in a Docker container or production domain
+  // Check hostname and protocol
   const hostname = window?.location?.hostname || 'localhost';
+  const protocol = window?.location?.protocol || 'http:';
 
-  // Production domains
-  if (hostname === 'kariajuda.com' || hostname === 'www.kariajuda.com') {
-    return 'https://api.kariajuda.com';
+  // Admin production domain - MUST use HTTPS with /api/v1 path
+  if (hostname === 'admin.kariajuda.com' || hostname === 'www.admin.kariajuda.com') {
+    return 'https://api.kariajuda.com/api/v1';
   }
 
-  // Docker container (site service connects to api service)
-  if (hostname === 'site' || hostname === 'kariajuda-site') {
-    return 'http://api:8000';
+  // If accessing via HTTPS anywhere, use HTTPS for API
+  if (protocol === 'https:') {
+    return 'https://api.kariajuda.com/api/v1';
   }
 
-  // Default URLs based on environment
-  switch (process.env.NODE_ENV) {
-    case 'production':
-      return 'https://api.kariajuda.com';
-    case 'development':
-      return 'http://localhost:8000';
-    case 'test':
-      return 'http://localhost:8000';
-    default:
-      return 'http://localhost:8000';
+  // Docker container (admin service connects to api service)
+  if (hostname === 'admin' || hostname === 'kariajuda-admin') {
+    return 'http://api:8000/api/v1';
   }
+
+  // Development
+  return 'http://127.0.0.1:8000/api/v1';
 };
 
 const API_BASE_URL = getApiUrl();
