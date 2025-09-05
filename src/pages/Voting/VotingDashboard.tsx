@@ -85,7 +85,7 @@ const VotingDashboard: React.FC = () => {
       
       // Fetch participants and votes
       let participantsEndpoint = endpoints.participants.list;
-      let votesEndpoint = endpoints.votes?.list || '/votes';
+      let votesEndpoint = endpoints.voting.votes;
       
       // If specific campaign selected
       if (selectedCampaign !== 'all') {

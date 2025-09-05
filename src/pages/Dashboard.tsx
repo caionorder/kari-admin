@@ -56,11 +56,10 @@ const Dashboard: React.FC = () => {
       setLoading(true);
       
       // Fetch real data from API
-      const [campaignsRes, participantsRes, votesRes, donationsRes] = await Promise.all([
+      const [campaignsRes, participantsRes, votesRes] = await Promise.all([
         api.get(endpoints.campaigns.list).catch(() => ({ data: [] })),
         api.get(endpoints.participants.list).catch(() => ({ data: [] })),
-        api.get(endpoints.votes.list).catch(() => ({ data: [] })),
-        api.get(endpoints.donations.list).catch(() => ({ data: [] }))
+        api.get(endpoints.voting.votes).catch(() => ({ data: [] }))
       ]);
 
       // Process campaigns data
@@ -77,7 +76,7 @@ const Dashboard: React.FC = () => {
       const totalVotes = votes.length;
       
       // Process donations data
-      const donations = Array.isArray(donationsRes.data) ? donationsRes.data : [];
+      const donations: any[] = []; // Donations not implemented in API yet
       const totalDonations = donations.reduce((sum: number, d: any) => sum + (d.amount || 0), 0);
 
       // Calculate changes (mock data for now - would need historical data)
