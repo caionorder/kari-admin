@@ -1,6 +1,30 @@
 import axios, { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://127.0.0.1:8000/api/v1';
+// Determine API URL based on environment
+const getApiUrl = (): string => {
+  // If explicitly set in environment, use that
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  
+  // Check hostname for production
+  const hostname = window?.location?.hostname || 'localhost';
+  
+  // Production domain
+  if (hostname === 'admin.kariajuda.com') {
+    return 'https://api.kariajuda.com/api/v1';
+  }
+  
+  // Docker container
+  if (hostname === 'admin' || hostname === 'kariajuda-admin') {
+    return 'http://api:8000/api/v1';
+  }
+  
+  // Development
+  return 'http://127.0.0.1:8000/api/v1';
+};
+
+const API_BASE_URL = getApiUrl();
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
