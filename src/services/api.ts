@@ -34,23 +34,28 @@ const getApiUrl = (): string => {
   return 'http://127.0.0.1:8000/api/v1';
 };
 
-const API_BASE_URL = getApiUrl();
-
-// Log the API URL for debugging
-console.log('Admin Panel API URL:', API_BASE_URL);
-
-// Create axios instance
+// Create axios instance without baseURL initially
 const api: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 30000,
 });
 
-// Request interceptor to add auth token
+// Request interceptor to add auth token and dynamic base URL
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Get the API URL dynamically for each request
+    const apiUrl = getApiUrl();
+    
+    // Log for debugging
+    console.log('Request URL:', config.url, 'Base URL:', apiUrl);
+    
+    // If the URL is relative, prepend the base URL
+    if (config.url && !config.url.startsWith('http')) {
+      config.url = apiUrl + config.url;
+    }
+    
     const token = localStorage.getItem('authToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -107,7 +112,7 @@ export const endpoints = {
   // Voting
   voting: {
     results: '/voting/results',
-    votes: '/voting/votes',
+    votes: '/votes',
     votesByCampaign: (campaignId: string) => `/campaigns/${campaignId}/votes`,
     stats: '/voting/statistics',
   },
