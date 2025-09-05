@@ -22,7 +22,8 @@ import {
   FiTrendingUp,
   FiUsers,
 } from '../../utils/icons';
-import api, { endpoints } from '../../services/api';
+import apiSafe from '../../services/apiSafe';
+import { endpoints } from '../../services/api';
 
 interface VoteData {
   participantId: string;
@@ -71,7 +72,7 @@ const VotingDashboard: React.FC = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await api.get(endpoints.campaigns.list);
+      const response = await apiSafe.get(endpoints.campaigns.list);
       const activeCampaigns = response.data.filter((c: any) => c.is_active);
       setCampaigns(activeCampaigns);
     } catch (error) {
@@ -94,8 +95,8 @@ const VotingDashboard: React.FC = () => {
       }
 
       const [participantsRes, votesRes] = await Promise.all([
-        api.get(participantsEndpoint).catch(() => ({ data: [] })),
-        api.get(votesEndpoint).catch(() => ({ data: [] }))
+        apiSafe.get(participantsEndpoint).catch(() => ({ data: [] })),
+        apiSafe.get(votesEndpoint).catch(() => ({ data: [] }))
       ]);
 
       const participants = Array.isArray(participantsRes.data) ? participantsRes.data : [];

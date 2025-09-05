@@ -22,7 +22,8 @@ import {
   FiTrendingUp,
   FiUsers,
 } from '../utils/icons';
-import api, { endpoints } from '../services/api';
+import apiSafe from '../services/apiSafe';
+import { endpoints } from '../services/api';
 
 interface StatCard {
   title: string;
@@ -57,9 +58,9 @@ const Dashboard: React.FC = () => {
       
       // Fetch real data from API
       const [campaignsRes, participantsRes, votesRes] = await Promise.all([
-        api.get(endpoints.campaigns.list).catch(() => ({ data: [] })),
-        api.get(endpoints.participants.list).catch(() => ({ data: [] })),
-        api.get(endpoints.voting.votes).catch(() => ({ data: [] }))
+        apiSafe.get(endpoints.campaigns.list).catch(() => ({ data: [] })),
+        apiSafe.get(endpoints.participants.list).catch(() => ({ data: [] })),
+        apiSafe.get(endpoints.voting.votes).catch(() => ({ data: [] }))
       ]);
 
       // Process campaigns data

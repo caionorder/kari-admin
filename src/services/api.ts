@@ -56,20 +56,46 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // If not production and no baseURL, add it dynamically
-    if (!isProduction && config.url && !config.url.startsWith('http')) {
-      const apiUrl = getApiUrl();
-      config.url = apiUrl + config.url;
-    }
+    // Debug: Log the full config
+    console.log('Request Config:', {
+      url: config.url,
+      baseURL: config.baseURL,
+      fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url,
+      method: config.method,
+      headers: config.headers
+    });
     
-    // Log final URL
-    console.log('Final Request URL:', config.url);
+    // FORCE HTTPS - Override any HTTP URL
+    if (isProduction) {
+      // If we have a baseURL with http, replace it
+      if (config.baseURL && config.baseURL.startsWith('http://')) {
+        config.baseURL = config.baseURL.replace('http://', 'https://');
+        console.warn('FORCED baseURL to HTTPS:', config.baseURL);
+      }
+      
+      // If the full URL would be HTTP, override it completely
+      if (config.url && !config.url.startsWith('http')) {
+        // URL is relative, ensure baseURL is HTTPS
+        config.baseURL = 'https://api.kariajuda.com/api/v1';
+      } else if (config.url && config.url.startsWith('http://')) {
+        // URL is absolute HTTP, force to HTTPS
+        config.url = config.url.replace('http://', 'https://');
+        console.warn('FORCED URL to HTTPS:', config.url);
+      }
+    }
     
     // Add auth token
     const token = localStorage.getItem('authToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    
+    console.log('Final Config:', {
+      url: config.url,
+      baseURL: config.baseURL,
+      willRequestURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url
+    });
+    
     return config;
   },
   (error: AxiosError) => {

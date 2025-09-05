@@ -3,7 +3,8 @@ import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api, { endpoints } from '../../services/api';
+import apiSafe from '../../services/apiSafe';
+import { endpoints } from '../../services/api';
 import {
   FiBarChart,
   FiEdit2,
@@ -51,9 +52,9 @@ const CampaignList: React.FC = () => {
       setLoading(true);
       
       // Fetch campaigns from API
-      const campaignsRes = await api.get(endpoints.campaigns.list);
-      const participantsRes = await api.get(endpoints.participants.list).catch(() => ({ data: [] }));
-      const votesRes = await api.get(endpoints.voting.votes).catch(() => ({ data: [] }));
+      const campaignsRes = await apiSafe.get(endpoints.campaigns.list);
+      const participantsRes = await apiSafe.get(endpoints.participants.list).catch(() => ({ data: [] }));
+      const votesRes = await apiSafe.get(endpoints.voting.votes).catch(() => ({ data: [] }));
       
       const campaignsData = Array.isArray(campaignsRes.data) ? campaignsRes.data : [];
       const participantsData = Array.isArray(participantsRes.data) ? participantsRes.data : [];
@@ -138,7 +139,7 @@ const CampaignList: React.FC = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Tem certeza que deseja excluir esta campanha?')) {
       try {
-        await api.delete(endpoints.campaigns.delete(id));
+        await apiSafe.delete(endpoints.campaigns.delete(id));
         setCampaigns(campaigns.filter((c) => c.id !== id));
         setFilteredCampaigns(filteredCampaigns.filter((c) => c.id !== id));
         toast.success('Campanha excluída com sucesso');

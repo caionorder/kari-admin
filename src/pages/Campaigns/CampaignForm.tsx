@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import api, { endpoints } from '../../services/api';
+import apiSafe from '../../services/apiSafe';
+import { endpoints } from '../../services/api';
 import { FiCalendar, FiDollarSign, FiUpload, FiX } from '../../utils/icons';
 
 interface CampaignFormData {
@@ -51,7 +52,7 @@ const CampaignForm: React.FC = () => {
 
   const fetchCampaign = async () => {
     try {
-      const response = await api.get(endpoints.campaigns.detail(id!));
+      const response = await apiSafe.get(endpoints.campaigns.detail(id!));
       const campaign = response.data;
 
       // Map API fields to form fields
@@ -94,7 +95,7 @@ const CampaignForm: React.FC = () => {
           formData.append('file', imageFile);
           
           // Upload image to server
-          const uploadResponse = await api.post(endpoints.upload.image, formData, {
+          const uploadResponse = await apiSafe.post(endpoints.upload.image, formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }
@@ -115,10 +116,10 @@ const CampaignForm: React.FC = () => {
       }
 
       if (isEdit) {
-        await api.put(endpoints.campaigns.update(id!), campaignData);
+        await apiSafe.put(endpoints.campaigns.update(id!), campaignData);
         toast.success('Campanha atualizada com sucesso');
       } else {
-        await api.post(endpoints.campaigns.create, campaignData);
+        await apiSafe.post(endpoints.campaigns.create, campaignData);
         toast.success('Campanha criada com sucesso');
       }
       navigate('/campaigns');

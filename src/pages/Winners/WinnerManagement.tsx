@@ -3,7 +3,8 @@ import { FiAward, FiCalendar, FiUser, FiCheckCircle } from '../../utils/icons';
 import { toast } from 'react-toastify';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import api, { endpoints } from '../../services/api';
+import apiSafe from '../../services/apiSafe';
+import { endpoints } from '../../services/api';
 
 interface Winner {
   id: string;
@@ -53,7 +54,7 @@ const WinnerManagement: React.FC = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await api.get(endpoints.campaigns.list);
+      const response = await apiSafe.get(endpoints.campaigns.list);
       setCampaigns(response.data);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -66,9 +67,9 @@ const WinnerManagement: React.FC = () => {
       setLoading(true);
       
       // Fetch winners from API
-      const winnersRes = await api.get(endpoints.winners.list).catch(() => ({ data: [] }));
-      const campaignsRes = await api.get(endpoints.campaigns.list).catch(() => ({ data: [] }));
-      const participantsRes = await api.get(endpoints.participants.list).catch(() => ({ data: [] }));
+      const winnersRes = await apiSafe.get(endpoints.winners.list).catch(() => ({ data: [] }));
+      const campaignsRes = await apiSafe.get(endpoints.campaigns.list).catch(() => ({ data: [] }));
+      const participantsRes = await apiSafe.get(endpoints.participants.list).catch(() => ({ data: [] }));
       
       const winnersData = Array.isArray(winnersRes.data) ? winnersRes.data : [];
       const campaignsData = Array.isArray(campaignsRes.data) ? campaignsRes.data : [];
@@ -105,8 +106,8 @@ const WinnerManagement: React.FC = () => {
   const fetchCampaignParticipants = async (campaignId: string) => {
     try {
       // Fetch participants for the selected campaign
-      const participantsRes = await api.get(endpoints.participants.byCampaign(campaignId)).catch(() => ({ data: [] }));
-      const votesRes = await api.get(endpoints.voting.votesByCampaign(campaignId)).catch(() => ({ data: [] }));
+      const participantsRes = await apiSafe.get(endpoints.participants.byCampaign(campaignId)).catch(() => ({ data: [] }));
+      const votesRes = await apiSafe.get(endpoints.voting.votesByCampaign(campaignId)).catch(() => ({ data: [] }));
       
       const participants = Array.isArray(participantsRes.data) ? participantsRes.data : [];
       const votes = Array.isArray(votesRes.data) ? votesRes.data : [];
@@ -161,7 +162,7 @@ const WinnerManagement: React.FC = () => {
         };
         
         // Post to API
-        await api.post(endpoints.winners.declare, winnerData).catch((error: any) => {
+        await apiSafe.post(endpoints.winners.declare, winnerData).catch((error: any) => {
           console.error('Error declaring winner:', error);
         });
       }

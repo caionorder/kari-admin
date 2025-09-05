@@ -2,7 +2,8 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import DataTable from '../../components/common/DataTable';
-import api, { endpoints } from '../../services/api';
+import apiSafe from '../../services/apiSafe';
+import { endpoints } from '../../services/api';
 import { FiAward, FiCalendar, FiMail, FiPhone, FiSearch } from '../../utils/icons';
 
 interface Participant {
@@ -42,9 +43,9 @@ const ParticipantList: React.FC = () => {
       
       // Fetch participants, campaigns and votes from API
       const [participantsRes, campaignsRes, votesRes] = await Promise.all([
-        api.get(endpoints.participants.list).catch(() => ({ data: [] })),
-        api.get(endpoints.campaigns.list).catch(() => ({ data: [] })),
-        api.get(endpoints.voting.votes).catch(() => ({ data: [] }))
+        apiSafe.get(endpoints.participants.list).catch(() => ({ data: [] })),
+        apiSafe.get(endpoints.campaigns.list).catch(() => ({ data: [] })),
+        apiSafe.get(endpoints.voting.votes).catch(() => ({ data: [] }))
       ]);
       
       const participantsData = Array.isArray(participantsRes.data) ? participantsRes.data : [];
@@ -88,7 +89,7 @@ const ParticipantList: React.FC = () => {
 
   const fetchCampaigns = async () => {
     try {
-      const response = await api.get(endpoints.campaigns.list);
+      const response = await apiSafe.get(endpoints.campaigns.list);
       const campaignsData = Array.isArray(response.data) ? response.data : [];
       
       const processedCampaigns = campaignsData.map((campaign: any) => ({
