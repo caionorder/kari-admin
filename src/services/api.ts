@@ -34,40 +34,38 @@ const getApiUrl = (): string => {
   return 'http://127.0.0.1:8000/api/v1';
 };
 
-// Create axios instance without baseURL initially
+// CRITICAL FIX: Force new axios instance for production
+const hostname = window?.location?.hostname || 'localhost';
+const isProduction = hostname.includes('kariajuda.com');
+
+console.log('API Service Init:', {
+  hostname,
+  isProduction,
+  baseURL: isProduction ? 'https://api.kariajuda.com/api/v1' : 'not set'
+});
+
+// Create axios instance with HTTPS base URL for production
 const api: AxiosInstance = axios.create({
+  baseURL: isProduction ? 'https://api.kariajuda.com/api/v1' : undefined,
   headers: {
     'Content-Type': 'application/json',
   },
   timeout: 30000,
 });
 
-// Request interceptor to add auth token and dynamic base URL
+// Request interceptor to add auth token
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    // FORCE HTTPS in production
-    const hostname = window?.location?.hostname || 'localhost';
-    const isProduction = hostname.includes('kariajuda.com');
-    
-    // Always use HTTPS in production
-    const apiUrl = isProduction 
-      ? 'https://api.kariajuda.com/api/v1'
-      : getApiUrl();
-    
-    // Log for debugging
-    console.log('Request URL:', config.url, 'Base URL:', apiUrl, 'Production:', isProduction);
-    
-    // Build full URL
-    if (config.url && !config.url.startsWith('http')) {
+    // If not production and no baseURL, add it dynamically
+    if (!isProduction && config.url && !config.url.startsWith('http')) {
+      const apiUrl = getApiUrl();
       config.url = apiUrl + config.url;
     }
     
-    // CRITICAL: Force HTTPS if URL still has HTTP in production
-    if (isProduction && config.url && config.url.startsWith('http://')) {
-      config.url = config.url.replace('http://', 'https://');
-      console.warn('FORCED HTTPS:', config.url);
-    }
+    // Log final URL
+    console.log('Final Request URL:', config.url);
     
+    // Add auth token
     const token = localStorage.getItem('authToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
