@@ -1,6 +1,9 @@
 # Admin Panel Dockerfile
 FROM node:18-alpine AS builder
 
+# Accept build arguments
+ARG REACT_APP_API_URL
+
 # Set working directory
 WORKDIR /app
 
@@ -12,6 +15,9 @@ RUN npm install --legacy-peer-deps
 
 # Copy application code
 COPY . .
+
+# Set environment variable for build
+ENV REACT_APP_API_URL=${REACT_APP_API_URL}
 
 # Build the application
 RUN npm run build

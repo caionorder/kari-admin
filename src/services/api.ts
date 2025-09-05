@@ -11,6 +11,11 @@ const getApiUrl = (): string => {
   const hostname = window?.location?.hostname || 'localhost';
   const protocol = window?.location?.protocol || 'http:';
   
+  // Debug logging in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('API URL Detection:', { hostname, protocol });
+  }
+  
   // Production domain - always use HTTPS
   if (hostname === 'admin.kariajuda.com' || hostname === 'www.admin.kariajuda.com') {
     return 'https://api.kariajuda.com/api/v1';
@@ -31,6 +36,9 @@ const getApiUrl = (): string => {
 };
 
 const API_BASE_URL = getApiUrl();
+
+// Log the API URL for debugging
+console.log('Admin Panel API URL:', API_BASE_URL);
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
