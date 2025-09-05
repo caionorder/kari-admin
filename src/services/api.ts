@@ -1,6 +1,11 @@
 import axios, { AxiosError, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 const getApiUrl = (): string => {
+  // Check for runtime config first (highest priority)
+  if ((window as any).RUNTIME_CONFIG?.API_URL) {
+    return (window as any).RUNTIME_CONFIG.API_URL;
+  }
+  
   // If explicitly set in environment, use that
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
