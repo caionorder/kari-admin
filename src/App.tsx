@@ -1,25 +1,90 @@
 import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+import { AuthProvider } from './contexts/AuthContext';
+import PrivateRoute from './components/PrivateRoute';
+import Layout from './components/Layout/Layout';
+
+// Pages
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import CampaignList from './pages/Campaigns/CampaignList';
+import CampaignForm from './pages/Campaigns/CampaignForm';
+import CampaignDetail from './pages/Campaigns/CampaignDetail';
+import ParticipantList from './pages/Participants/ParticipantList';
+import VotingDashboard from './pages/Voting/VotingDashboard';
+import WinnerManagement from './pages/Winners/WinnerManagement';
+import ContentManagement from './pages/Content/ContentManagement';
+import UserManagement from './pages/Users/UserManagement';
+
+// Import styles
+import './styles/admin.css';
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <BrowserRouter>
+      <AuthProvider>
+        <div className="App">
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<Login />} />
+
+            {/* Private Routes */}
+            <Route
+              path="/"
+              element={
+                <PrivateRoute>
+                  <Layout />
+                </PrivateRoute>
+              }
+            >
+              <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="dashboard" element={<Dashboard />} />
+              
+              {/* Campaigns Routes */}
+              <Route path="campaigns" element={<CampaignList />} />
+              <Route path="campaigns/new" element={<CampaignForm />} />
+              <Route path="campaigns/:id" element={<CampaignDetail />} />
+              <Route path="campaigns/:id/edit" element={<CampaignForm />} />
+              
+              {/* Participants Routes */}
+              <Route path="participants" element={<ParticipantList />} />
+              
+              {/* Voting Routes */}
+              <Route path="voting" element={<VotingDashboard />} />
+              
+              {/* Winners Routes */}
+              <Route path="winners" element={<WinnerManagement />} />
+              
+              {/* Content Routes */}
+              <Route path="content" element={<ContentManagement />} />
+              
+              {/* Users Routes */}
+              <Route path="users" element={<UserManagement />} />
+            </Route>
+
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+
+          {/* Toast Notifications */}
+          <ToastContainer
+            position="top-right"
+            autoClose={5000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="light"
+          />
+        </div>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
 
