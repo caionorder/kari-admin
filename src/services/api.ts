@@ -130,37 +130,37 @@ export const endpoints = {
   },
   // Campaigns
   campaigns: {
-    list: '/campaigns',
+    list: '/campaigns/',
     detail: (id: string) => `/campaigns/${id}`,
-    create: '/campaigns',
+    create: '/campaigns/',
     update: (id: string) => `/campaigns/${id}`,
     delete: (id: string) => `/campaigns/${id}`,
   },
   // Participants
   participants: {
-    list: '/participants',
+    list: '/participants/',
     detail: (id: string) => `/participants/${id}`,
-    create: '/participants',
+    create: '/participants/',
     update: (id: string) => `/participants/${id}`,
     delete: (id: string) => `/participants/${id}`,
-    byCampaign: (campaignId: string) => `/campaigns/${campaignId}/participants`,
+    byCampaign: (campaignId: string) => `/campaigns/${campaignId}/participants/`,
   },
   // Voting
   voting: {
-    results: '/voting/results',
-    votes: '/votes',
-    votesByCampaign: (campaignId: string) => `/campaigns/${campaignId}/votes`,
+    results: '/voting/results/',
+    votes: '/votes/',
+    votesByCampaign: (campaignId: string) => `/campaigns/${campaignId}/votes/`,
     stats: '/voting/statistics',
   },
   // Winners
   winners: {
-    list: '/winners',
-    declare: '/winners/declare',
-    byCampaign: (campaignId: string) => `/campaigns/${campaignId}/winners`,
+    list: '/winners/',
+    declare: '/winners/declare/',
+    byCampaign: (campaignId: string) => `/campaigns/${campaignId}/winners/`,
   },
   // Content
   content: {
-    list: '/content',
+    list: '/content/',
     detail: (id: string) => `/content/${id}`,
     update: (id: string) => `/content/${id}`,
   },
@@ -174,14 +174,14 @@ export const endpoints = {
   },
   // Statistics
   stats: {
-    dashboard: '/statistics/dashboard',
-    campaigns: '/statistics/campaigns',
-    participants: '/statistics/participants',
-    voting: '/statistics/voting',
+    dashboard: '/statistics/dashboard/',
+    campaigns: '/statistics/campaigns/',
+    participants: '/statistics/participants/',
+    voting: '/statistics/voting/',
   },
   // Upload
   upload: {
-    image: '/upload/image',
+    image: '/upload/image/',
     delete: (filename: string) => `/upload/image/${filename}`,
   },
 };
