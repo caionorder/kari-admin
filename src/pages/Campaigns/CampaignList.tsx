@@ -3,8 +3,8 @@ import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import apiSafe from '../../services/apiSafe';
 import { endpoints } from '../../services/api';
+import apiSafe from '../../services/apiSafe';
 import {
   FiBarChart,
   FiEdit2,
@@ -50,47 +50,47 @@ const CampaignList: React.FC = () => {
   const fetchCampaigns = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch campaigns from API
       const campaignsRes = await apiSafe.get(endpoints.campaigns.list);
       const participantsRes = await apiSafe.get(endpoints.participants.list).catch(() => ({ data: [] }));
       const votesRes = await apiSafe.get(endpoints.voting.votes).catch(() => ({ data: [] }));
-      
+
       const campaignsData = Array.isArray(campaignsRes.data) ? campaignsRes.data : [];
       const participantsData = Array.isArray(participantsRes.data) ? participantsRes.data : [];
       const votesData = Array.isArray(votesRes.data) ? votesRes.data : [];
-      
+
       // Count participants and votes per campaign
       const participantsByCampaign: { [key: string]: number } = {};
       const votesByCampaign: { [key: string]: number } = {};
-      
+
       participantsData.forEach((participant: any) => {
         const campaignId = participant.campaign_id;
         if (campaignId) {
           participantsByCampaign[campaignId] = (participantsByCampaign[campaignId] || 0) + 1;
         }
       });
-      
+
       votesData.forEach((vote: any) => {
         const participant = participantsData.find((p: any) => p.id === vote.participant_id);
         if (participant?.campaign_id) {
           votesByCampaign[participant.campaign_id] = (votesByCampaign[participant.campaign_id] || 0) + 1;
         }
       });
-      
+
       // Map campaigns with real data
       const processedCampaigns: Campaign[] = campaignsData.map((campaign: any) => {
         const now = new Date();
         const startDate = campaign.start_date ? new Date(campaign.start_date) : now;
         const endDate = campaign.end_date ? new Date(campaign.end_date) : now;
-        
+
         let status: 'active' | 'pending' | 'completed' = 'active';
         if (campaign.is_active === false || endDate < now) {
           status = 'completed';
         } else if (startDate > now) {
           status = 'pending';
         }
-        
+
         return {
           id: campaign.id,
           title: campaign.title || 'Sem título',
@@ -105,7 +105,7 @@ const CampaignList: React.FC = () => {
           raisedAmount: campaign.raised_amount || 0,
         };
       });
-      
+
       setCampaigns(processedCampaigns);
     } catch (error) {
       console.error('Error fetching campaigns:', error);
@@ -267,7 +267,7 @@ const CampaignList: React.FC = () => {
                       <div className="h-10 w-10 flex-shrink-0">
                         <img
                           className="h-10 w-10 rounded-lg object-cover"
-                          src={campaign.image || '/placeholder.jpg'}
+                          src={"https://api.kariajuda.com/"+campaign.image || '/placeholder.jpg'}
                           alt={campaign.title}
                         />
                       </div>

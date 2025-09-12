@@ -166,7 +166,7 @@ const CampaignDetail: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="relative h-64">
           <img
-            src={campaign.image || '/placeholder.jpg'}
+            src={"https://api.kariajuda.com/"+campaign.image || '/placeholder.jpg'}
             alt={campaign.title}
             className="w-full h-full object-cover"
           />
