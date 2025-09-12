@@ -5,7 +5,7 @@ const getApiUrl = (): string => {
   if ((window as any).RUNTIME_CONFIG?.API_URL) {
     return (window as any).RUNTIME_CONFIG.API_URL;
   }
-  
+
   // If explicitly set in environment, use that
   if (process.env.REACT_APP_API_URL) {
     return process.env.REACT_APP_API_URL;
@@ -64,7 +64,7 @@ api.interceptors.request.use(
       method: config.method,
       headers: config.headers
     });
-    
+
     // FORCE HTTPS - Override any HTTP URL
     if (isProduction) {
       // If we have a baseURL with http, replace it
@@ -72,7 +72,7 @@ api.interceptors.request.use(
         config.baseURL = config.baseURL.replace('http://', 'https://');
         console.warn('FORCED baseURL to HTTPS:', config.baseURL);
       }
-      
+
       // If the full URL would be HTTP, override it completely
       if (config.url && !config.url.startsWith('http')) {
         // URL is relative, ensure baseURL is HTTPS
@@ -83,19 +83,19 @@ api.interceptors.request.use(
         console.warn('FORCED URL to HTTPS:', config.url);
       }
     }
-    
+
     // Add auth token
     const token = localStorage.getItem('authToken');
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-    
+
     console.log('Final Config:', {
       url: config.url,
       baseURL: config.baseURL,
       willRequestURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url
     });
-    
+
     return config;
   },
   (error: AxiosError) => {
@@ -181,7 +181,7 @@ export const endpoints = {
   },
   // Upload
   upload: {
-    image: '/upload/image/',
+    image: '/upload/image',
     delete: (filename: string) => `/upload/image/${filename}`,
   },
 };
