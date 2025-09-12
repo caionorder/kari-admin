@@ -4,15 +4,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import apiSafe from '../../services/apiSafe';
 import { endpoints } from '../../services/api';
-import { FiCalendar, FiDollarSign, FiUpload, FiX } from '../../utils/icons';
+import { FiUpload, FiX } from '../../utils/icons';
 
 interface CampaignFormData {
   title: string;
   description: string;
+  full_description: string;
   category: string;
-  startDate: string;
-  endDate: string;
-  targetAmount: number;
+  goal: number; // Meta de participantes
+  is_active: boolean;
   image?: FileList;
 }
 
@@ -58,10 +58,10 @@ const CampaignForm: React.FC = () => {
       // Map API fields to form fields
       setValue('title', campaign.title);
       setValue('description', campaign.description);
-      setValue('category', campaign.category || 'general');
-      setValue('startDate', campaign.start_date ? campaign.start_date.split('T')[0] : '');
-      setValue('endDate', campaign.end_date ? campaign.end_date.split('T')[0] : '');
-      setValue('targetAmount', campaign.target_amount || 0);
+      setValue('full_description', campaign.full_description || '');
+      setValue('category', campaign.category || '');
+      setValue('goal', campaign.goal || 5000);
+      setValue('is_active', campaign.status === 'active');
       
       if (campaign.image_url) {
         setImagePreview(campaign.image_url);
@@ -80,11 +80,10 @@ const CampaignForm: React.FC = () => {
       const campaignData: any = {
         title: data.title,
         description: data.description,
+        full_description: data.full_description,
         category: data.category,
-        start_date: data.startDate,
-        end_date: data.endDate,
-        target_amount: Number(data.targetAmount),
-        is_active: true
+        goal: Number(data.goal),
+        status: data.is_active ? 'active' : 'draft'
       };
 
       // Handle image upload if present
@@ -169,18 +168,35 @@ const CampaignForm: React.FC = () => {
 
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Descrição *
+                Descrição Curta *
               </label>
               <textarea
                 {...register('description', { required: 'Descrição é obrigatória' })}
-                rows={4}
+                rows={2}
                 className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
                   errors.description ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="Descreva os objetivos e benefícios da campanha..."
+                placeholder="Descrição breve que aparece na listagem de campanhas..."
               />
               {errors.description && (
                 <p className="mt-1 text-sm text-red-600">{errors.description.message}</p>
+              )}
+            </div>
+
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Descrição Completa *
+              </label>
+              <textarea
+                {...register('full_description', { required: 'Descrição completa é obrigatória' })}
+                rows={5}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.full_description ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="Descrição detalhada com objetivos e benefícios da campanha..."
+              />
+              {errors.full_description && (
+                <p className="mt-1 text-sm text-red-600">{errors.full_description.message}</p>
               )}
             </div>
 
@@ -209,70 +225,39 @@ const CampaignForm: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Meta de Arrecadação (R$) *
+                Meta de Participantes *
               </label>
-              <div className="relative">
-                <FiDollarSign className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="number"
-                  {...register('targetAmount', {
-                    required: 'Meta é obrigatória',
-                    min: { value: 100, message: 'Meta mínima é R$ 100' },
-                  })}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    errors.targetAmount ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="50000"
-                />
-              </div>
-              {errors.targetAmount && (
-                <p className="mt-1 text-sm text-red-600">{errors.targetAmount.message}</p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Campaign Period */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">Período da Campanha</h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Data de Início *
-              </label>
-              <div className="relative">
-                <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                <input
-                  type="date"
-                  {...register('startDate', { required: 'Data de início é obrigatória' })}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    errors.startDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                />
-              </div>
-              {errors.startDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.startDate.message}</p>
+              <input
+                type="number"
+                {...register('goal', {
+                  required: 'Meta de participantes é obrigatória',
+                  min: { value: 100, message: 'Meta mínima é 100 participantes' },
+                })}
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
+                  errors.goal ? 'border-red-500' : 'border-gray-300'
+                }`}
+                placeholder="5000"
+              />
+              <p className="mt-1 text-xs text-gray-500">Número de participantes necessários para atingir a meta</p>
+              {errors.goal && (
+                <p className="mt-1 text-sm text-red-600">{errors.goal.message}</p>
               )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Data de Término *
+                Status da Campanha
               </label>
-              <div className="relative">
-                <FiCalendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <label className="inline-flex items-center">
                 <input
-                  type="date"
-                  {...register('endDate', { required: 'Data de término é obrigatória' })}
-                  className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 ${
-                    errors.endDate ? 'border-red-500' : 'border-gray-300'
-                  }`}
+                  type="checkbox"
+                  {...register('is_active')}
+                  defaultChecked={true}
+                  className="form-checkbox h-4 w-4 text-purple-600 transition duration-150 ease-in-out"
                 />
-              </div>
-              {errors.endDate && (
-                <p className="mt-1 text-sm text-red-600">{errors.endDate.message}</p>
-              )}
+                <span className="ml-2 text-sm text-gray-700">Campanha Ativa</span>
+              </label>
+              <p className="mt-1 text-xs text-gray-500">Desmarque para salvar como rascunho</p>
             </div>
           </div>
         </div>
