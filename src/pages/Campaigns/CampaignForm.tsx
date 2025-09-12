@@ -103,11 +103,8 @@ const CampaignForm: React.FC = () => {
           
           // Get the URL from upload response
           if (uploadResponse.data && uploadResponse.data.url) {
-            // Convert relative URL to full URL for production
-            const baseUrl = window.location.protocol === 'https:' 
-              ? 'https://api.kariajuda.com' 
-              : '';
-            campaignData.image_url = baseUrl + uploadResponse.data.url;
+            // Use only the path without domain (like /microondas.png)
+            campaignData.image_url = uploadResponse.data.url;
           }
         } catch (uploadError) {
           console.error('Error uploading image:', uploadError);
@@ -198,12 +195,12 @@ const CampaignForm: React.FC = () => {
                 }`}
               >
                 <option value="">Selecione uma categoria</option>
-                <option value="education">Educação</option>
-                <option value="health">Saúde</option>
-                <option value="environment">Meio Ambiente</option>
-                <option value="culture">Cultura</option>
-                <option value="sports">Esporte</option>
-                <option value="social">Social</option>
+                <option value="eletrodomesticos">Eletrodomésticos</option>
+                <option value="alimentacao">Alimentação</option>
+                <option value="financeiro">Financeiro</option>
+                <option value="essenciais">Essenciais</option>
+                <option value="eletronicos">Eletrônicos</option>
+                <option value="tecnologia">Tecnologia</option>
               </select>
               {errors.category && (
                 <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
