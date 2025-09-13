@@ -2,6 +2,9 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'react-toastify';
+import apiSafe from '../../services/apiSafe';
+import { endpoints } from '../../services/api';
 import {
   CartesianGrid,
   Legend,
@@ -27,15 +30,14 @@ interface Campaign {
   id: string;
   title: string;
   description: string;
-  image: string;
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'pending' | 'completed';
-  targetAmount: number;
-  raisedAmount: number;
-  participantsCount: number;
-  votesCount: number;
+  full_description?: string;
+  image_url?: string;
+  goal: number;
+  current_participants: number;
+  status: 'active' | 'pending' | 'completed' | 'draft';
   category: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface Participant {
@@ -60,36 +62,38 @@ const CampaignDetail: React.FC = () => {
 
   const fetchCampaignDetails = async () => {
     try {
-      // Simulated data
-      const mockCampaign: Campaign = {
-        id: '1',
-        title: 'Educação para Todos',
-        description: 'Campanha para arrecadar fundos para materiais escolares e infraestrutura educacional em comunidades carentes.',
-        image: '/images/campaign1.jpg',
-        startDate: '2024-01-15',
-        endDate: '2024-03-15',
-        status: 'active',
-        targetAmount: 50000,
-        raisedAmount: 32000,
-        participantsCount: 45,
-        votesCount: 1234,
-        category: 'Educação',
-      };
-
-      const mockParticipants: Participant[] = [
-        { id: '1', name: 'Maria Silva', votes: 456, position: 1 },
-        { id: '2', name: 'João Santos', votes: 389, position: 2 },
-        { id: '3', name: 'Ana Costa', votes: 234, position: 3 },
-        { id: '4', name: 'Pedro Oliveira', votes: 189, position: 4 },
-        { id: '5', name: 'Lucia Ferreira', votes: 156, position: 5 },
-      ];
-
-      setCampaign(mockCampaign);
-      setParticipants(mockParticipants);
+      setLoading(true);
+      
+      // Fetch campaign data from API
+      const response = await apiSafe.get(endpoints.campaigns.detail(id!));
+      const campaignData = response.data;
+      
+      setCampaign(campaignData);
+      
+      // Fetch participants if available
+      try {
+        const participantsResponse = await apiSafe.get(`/campaigns/${id}/participants`);
+        if (participantsResponse.data) {
+          const participantsList = participantsResponse.data.map((p: any, index: number) => ({
+            id: p.id,
+            name: p.full_name || p.name,
+            votes: p.vote_count || 0,
+            position: index + 1,
+            photo: p.image_url
+          }));
+          setParticipants(participantsList);
+        }
+      } catch (err) {
+        // Participants endpoint might not exist yet
+        console.log('Could not fetch participants');
+      }
+      
       setLoading(false);
     } catch (error) {
       console.error('Error fetching campaign details:', error);
+      toast.error('Erro ao carregar detalhes da campanha');
       setLoading(false);
+      navigate('/campaigns');
     }
   };
 
@@ -123,7 +127,7 @@ const CampaignDetail: React.FC = () => {
 
   const getProgressPercentage = () => {
     if (!campaign) return 0;
-    return Math.min((campaign.raisedAmount / campaign.targetAmount) * 100, 100);
+    return Math.min((campaign.current_participants / campaign.goal) * 100, 100);
   };
 
   if (loading || !campaign) {
@@ -166,7 +170,7 @@ const CampaignDetail: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md overflow-hidden">
         <div className="relative h-64">
           <img
-            src={"https://api.kariajuda.com/"+campaign.image || '/placeholder.jpg'}
+            src={campaign.image_url ? `https://api.kariajuda.com${campaign.image_url}` : '/placeholder.jpg'}
             alt={campaign.title}
             className="w-full h-full object-cover"
           />
@@ -174,12 +178,11 @@ const CampaignDetail: React.FC = () => {
           <div className="absolute bottom-4 left-4 right-4 text-white">
             <p className="text-sm mb-2">
               <FiCalendar className="inline w-4 h-4 mr-1" />
-              {format(new Date(campaign.startDate), 'dd MMM', { locale: ptBR })} -{' '}
-              {format(new Date(campaign.endDate), 'dd MMM yyyy', { locale: ptBR })}
+              Campanha {campaign.status === 'active' ? 'Ativa' : campaign.status}
             </p>
             <div className="bg-white/20 rounded-lg backdrop-blur-sm p-3">
               <div className="flex justify-between text-sm mb-2">
-                <span>Arrecadado: R$ {campaign.raisedAmount.toLocaleString()}</span>
+                <span>Participantes: {campaign.current_participants}</span>
                 <span>{getProgressPercentage().toFixed(0)}%</span>
               </div>
               <div className="w-full bg-white/30 rounded-full h-3">
@@ -188,7 +191,7 @@ const CampaignDetail: React.FC = () => {
                   style={{ width: `${getProgressPercentage()}%` }}
                 />
               </div>
-              <p className="text-xs mt-2">Meta: R$ {campaign.targetAmount.toLocaleString()}</p>
+              <p className="text-xs mt-2">Meta: {campaign.goal} participantes</p>
             </div>
           </div>
         </div>
@@ -200,7 +203,7 @@ const CampaignDetail: React.FC = () => {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Participantes</p>
-              <p className="text-2xl font-bold text-gray-900">{campaign.participantsCount}</p>
+              <p className="text-2xl font-bold text-gray-900">{campaign.current_participants}</p>
             </div>
             <FiUsers className="w-8 h-8 text-blue-500 opacity-30" />
           </div>
@@ -208,8 +211,8 @@ const CampaignDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total de Votos</p>
-              <p className="text-2xl font-bold text-gray-900">{campaign.votesCount.toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Meta</p>
+              <p className="text-2xl font-bold text-gray-900">{campaign.goal.toLocaleString()}</p>
             </div>
             <FiBarChart className="w-8 h-8 text-purple-500 opacity-30" />
           </div>
@@ -217,8 +220,8 @@ const CampaignDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Arrecadado</p>
-              <p className="text-2xl font-bold text-gray-900">R$ {campaign.raisedAmount.toLocaleString()}</p>
+              <p className="text-sm text-gray-600">Progresso</p>
+              <p className="text-2xl font-bold text-gray-900">{getProgressPercentage().toFixed(0)}%</p>
             </div>
             <FiDollarSign className="w-8 h-8 text-green-500 opacity-30" />
           </div>
@@ -226,9 +229,9 @@ const CampaignDetail: React.FC = () => {
         <div className="bg-white rounded-lg shadow-md p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Dias Restantes</p>
+              <p className="text-sm text-gray-600">Status</p>
               <p className="text-2xl font-bold text-gray-900">
-                {Math.max(0, Math.ceil((new Date(campaign.endDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))}
+                {campaign.status === 'active' ? 'Ativa' : campaign.status}
               </p>
             </div>
             <FiCalendar className="w-8 h-8 text-orange-500 opacity-30" />
@@ -268,26 +271,32 @@ const CampaignDetail: React.FC = () => {
               </div>
               <div className="grid grid-cols-2 gap-4 pt-4">
                 <div>
-                  <p className="text-sm text-gray-600">Data de Início</p>
+                  <p className="text-sm text-gray-600">Criado em</p>
                   <p className="font-semibold">
-                    {format(new Date(campaign.startDate), 'dd/MM/yyyy', { locale: ptBR })}
+                    {campaign.created_at ? format(new Date(campaign.created_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                   </p>
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600">Data de Término</p>
+                  <p className="text-sm text-gray-600">Atualizado em</p>
                   <p className="font-semibold">
-                    {format(new Date(campaign.endDate), 'dd/MM/yyyy', { locale: ptBR })}
+                    {campaign.updated_at ? format(new Date(campaign.updated_at), 'dd/MM/yyyy', { locale: ptBR }) : '-'}
                   </p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Categoria</p>
-                  <p className="font-semibold">{campaign.category}</p>
+                  <p className="font-semibold">{campaign.category || '-'}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">Status</p>
                   <div className="mt-1">{getStatusBadge(campaign.status)}</div>
                 </div>
               </div>
+              {campaign.full_description && (
+                <div className="pt-4 border-t mt-4">
+                  <h4 className="font-semibold text-gray-900 mb-2">Descrição Completa</h4>
+                  <p className="text-gray-600">{campaign.full_description}</p>
+                </div>
+              )}
             </div>
           )}
 
