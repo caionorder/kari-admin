@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { endpoints } from '../../services/api';
 import apiSafe from '../../services/apiSafe';
+import { getImageUrl } from '../../utils/imageUrl';
 import {
   FiBarChart,
   FiEdit2,
@@ -19,14 +20,17 @@ interface Campaign {
   id: string;
   title: string;
   description: string;
-  image: string;
-  startDate: string;
-  endDate: string;
-  status: 'active' | 'pending' | 'completed';
-  participantsCount: number;
-  votesCount: number;
-  targetAmount: number;
-  raisedAmount: number;
+  image_url?: string;
+  image?: string; // For backwards compatibility
+  startDate?: string;
+  endDate?: string;
+  status: 'active' | 'pending' | 'completed' | 'draft';
+  current_participants?: number;
+  participantsCount?: number; // For backwards compatibility
+  votesCount?: number;
+  goal?: number;
+  targetAmount?: number; // For backwards compatibility
+  raisedAmount?: number;
 }
 
 const CampaignList: React.FC = () => {
@@ -267,7 +271,7 @@ const CampaignList: React.FC = () => {
                       <div className="h-10 w-10 flex-shrink-0">
                         <img
                           className="h-10 w-10 rounded-lg object-cover"
-                          src={"https://api.kariajuda.com/"+campaign.image || '/placeholder.jpg'}
+                          src={getImageUrl(campaign.image_url || campaign.image)}
                           alt={campaign.title}
                         />
                       </div>
