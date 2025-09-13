@@ -283,41 +283,53 @@ const CampaignList: React.FC = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-900">
-                      {format(new Date(campaign.startDate), 'dd MMM', { locale: ptBR })} -{' '}
-                      {format(new Date(campaign.endDate), 'dd MMM yyyy', { locale: ptBR })}
+                      {campaign.startDate && campaign.endDate ? (
+                        <>
+                          {format(new Date(campaign.startDate), 'dd MMM', { locale: ptBR })} -{' '}
+                          {format(new Date(campaign.endDate), 'dd MMM yyyy', { locale: ptBR })}
+                        </>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">{getStatusBadge(campaign.status)}</td>
                   <td className="px-6 py-4">
                     <div className="flex items-center text-sm text-gray-900">
                       <FiUsers className="w-4 h-4 mr-1 text-gray-400" />
-                      {campaign.participantsCount}
+                      {campaign.current_participants || campaign.participantsCount || 0}
                     </div>
                     <div className="flex items-center text-sm text-gray-500 mt-1">
                       <FiBarChart className="w-4 h-4 mr-1 text-gray-400" />
-                      {campaign.votesCount} votos
+                      {campaign.votesCount || 0} votos
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="w-32">
-                      <div className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>R$ {campaign.raisedAmount.toLocaleString()}</span>
-                        <span>{getProgressPercentage(campaign.raisedAmount, campaign.targetAmount).toFixed(0)}%</span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full"
-                          style={{
-                            width: `${getProgressPercentage(
-                              campaign.raisedAmount,
-                              campaign.targetAmount
-                            )}%`,
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        Meta: R$ {campaign.targetAmount.toLocaleString()}
-                      </div>
+                      {campaign.goal ? (
+                        <>
+                          <div className="flex justify-between text-sm text-gray-600 mb-1">
+                            <span>{campaign.current_participants || 0} participantes</span>
+                            <span>{getProgressPercentage(campaign.current_participants || 0, campaign.goal).toFixed(0)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                              className="bg-gradient-to-r from-purple-500 to-indigo-500 h-2 rounded-full"
+                              style={{
+                                width: `${getProgressPercentage(
+                                  campaign.current_participants || 0,
+                                  campaign.goal
+                                )}%`,
+                              }}
+                            ></div>
+                          </div>
+                          <div className="text-xs text-gray-500 mt-1">
+                            Meta: {campaign.goal.toLocaleString()} participantes
+                          </div>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">
