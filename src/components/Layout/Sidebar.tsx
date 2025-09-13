@@ -9,6 +9,7 @@ import {
   FiUser,
   FiX,
   FiLogOut,
+  FiGift,
 } from '../../utils/icons';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -45,6 +46,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggleSidebar }) => {
       path: '/winners',
       name: 'Vencedores',
       icon: <FiAward className="w-5 h-5" />,
+    },
+    {
+      path: '/testimonials',
+      name: 'Entregas',
+      icon: <FiGift className="w-5 h-5" />,
     },
     {
       path: '/content',

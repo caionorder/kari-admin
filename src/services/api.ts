@@ -158,6 +158,15 @@ export const endpoints = {
     declare: '/winners/declare/',
     byCampaign: (campaignId: string) => `/campaigns/${campaignId}/winners/`,
   },
+  // Testimonials
+  testimonials: {
+    list: '/testimonials/',
+    detail: (id: string) => `/testimonials/${id}`,
+    create: '/testimonials/',
+    update: (id: string) => `/testimonials/${id}`,
+    delete: (id: string) => `/testimonials/${id}`,
+    featured: '/testimonials/featured/',
+  },
   // Content
   content: {
     list: '/content/',

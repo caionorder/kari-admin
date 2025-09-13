@@ -60,6 +60,9 @@ export const FiAlignLeft = makeIcon(FiIcons.FiAlignLeft);
 export const FiArrowRight = makeIcon(FiIcons.FiArrowRight);
 export const FiAlertCircle = makeIcon(FiIcons.FiAlertCircle);
 export const FiActivity = makeIcon(FiIcons.FiActivity);
+export const FiStar = makeIcon(FiIcons.FiStar);
+export const FiTag = makeIcon(FiIcons.FiTag);
+export const FiGift = makeIcon(FiIcons.FiGift);
 
 // Export all other icons that might be needed
 export * from 'react-icons/ai';

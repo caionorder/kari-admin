@@ -18,6 +18,9 @@ import VotingDashboard from './pages/Voting/VotingDashboard';
 import WinnerManagement from './pages/Winners/WinnerManagement';
 import ContentManagement from './pages/Content/ContentManagement';
 import UserManagement from './pages/Users/UserManagement';
+import TestimonialList from './pages/Testimonials/TestimonialList';
+import TestimonialForm from './pages/Testimonials/TestimonialForm';
+import TestimonialDetail from './pages/Testimonials/TestimonialDetail';
 
 // Import styles
 import './styles/admin.css';
@@ -57,6 +60,12 @@ function App() {
               
               {/* Winners Routes */}
               <Route path="winners" element={<WinnerManagement />} />
+              
+              {/* Testimonials Routes */}
+              <Route path="testimonials" element={<TestimonialList />} />
+              <Route path="testimonials/new" element={<TestimonialForm />} />
+              <Route path="testimonials/:id" element={<TestimonialDetail />} />
+              <Route path="testimonials/:id/edit" element={<TestimonialForm />} />
               
               {/* Content Routes */}
               <Route path="content" element={<ContentManagement />} />
