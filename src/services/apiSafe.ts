@@ -72,6 +72,21 @@ const apiSafe = {
     });
   },
   
+  patch: (url: string, data?: any, config?: any) => {
+    const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
+    const finalUrl = isProduction && fullUrl.startsWith('http://') 
+      ? fullUrl.replace('http://', 'https://') 
+      : fullUrl;
+    
+    return axios.patch(finalUrl, data, {
+      ...config,
+      headers: {
+        ...config?.headers,
+        'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+      }
+    });
+  },
+  
   delete: (url: string, config?: any) => {
     const fullUrl = url.startsWith('http') ? url : `${API_BASE}${url}`;
     const finalUrl = isProduction && fullUrl.startsWith('http://') 

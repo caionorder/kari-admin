@@ -292,7 +292,7 @@ const TestimonialList: React.FC = () => {
                         <div className="text-sm font-medium text-gray-900 flex items-center">
                           {testimonial.title}
                           {testimonial.video_url && (
-                            <FiVideo className="w-4 h-4 ml-2 text-purple-600" title="Contém vídeo" />
+                            <FiVideo className="w-4 h-4 ml-2 text-purple-600" />
                           )}
                         </div>
                         <div className="text-sm text-gray-500 truncate max-w-xs">
@@ -338,7 +338,7 @@ const TestimonialList: React.FC = () => {
                             ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                         }`}
-                        title={testimonial.is_featured ? 'Remover destaque' : 'Destacar'}
+                        // title={testimonial.is_featured ? 'Remover destaque' : 'Destacar'}
                       >
                         <FiStar className={`w-3 h-3 mr-1 ${testimonial.is_featured ? 'fill-current' : ''}`} />
                         {testimonial.is_featured ? 'Destaque' : 'Normal'}
@@ -360,21 +360,21 @@ const TestimonialList: React.FC = () => {
                       <button
                         onClick={() => navigate(`/testimonials/${testimonial.id}`)}
                         className="text-blue-600 hover:text-blue-900"
-                        title="Visualizar"
+                        // title="Visualizar"
                       >
                         <FiEye className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => navigate(`/testimonials/${testimonial.id}/edit`)}
                         className="text-yellow-600 hover:text-yellow-900"
-                        title="Editar"
+                        // title="Editar"
                       >
                         <FiEdit2 className="w-5 h-5" />
                       </button>
                       <button
                         onClick={() => handleDelete(testimonial.id)}
                         className="text-red-600 hover:text-red-900"
-                        title="Excluir"
+                        // title="Excluir"
                       >
                         <FiTrash2 className="w-5 h-5" />
                       </button>
