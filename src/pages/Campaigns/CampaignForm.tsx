@@ -5,6 +5,7 @@ import { toast } from 'react-toastify';
 import apiSafe from '../../services/apiSafe';
 import { endpoints } from '../../services/api';
 import { FiUpload, FiX } from '../../utils/icons';
+import { getImageUrl } from '../../utils/imageUrl';
 
 interface CampaignFormData {
   title: string;
@@ -64,7 +65,7 @@ const CampaignForm: React.FC = () => {
       setValue('is_active', campaign.status === 'active');
       
       if (campaign.image_url) {
-        setImagePreview(campaign.image_url);
+        setImagePreview(getImageUrl(campaign.image_url));
       }
     } catch (error) {
       console.error('Error fetching campaign:', error);
