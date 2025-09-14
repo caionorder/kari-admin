@@ -173,6 +173,10 @@ export const endpoints = {
     detail: (id: string) => `/content/${id}`,
     update: (id: string) => `/content/${id}`,
   },
+  // Pages
+  pages: {
+    aboutKari: '/pages/about-kari',
+  },
   // Users
   users: {
     list: '/users',

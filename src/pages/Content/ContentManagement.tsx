@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { FiEdit2, FiSave, FiX, FiImage, FiType, FiAlignLeft } from '../../utils/icons';
+import { FiEdit2, FiSave, FiX, FiImage, FiType, FiAlignLeft, FiUser } from '../../utils/icons';
 import { toast } from 'react-toastify';
+import { useNavigate } from 'react-router-dom';
 
 interface ContentSection {
   id: string;
@@ -20,6 +21,7 @@ interface ContentSection {
 }
 
 const ContentManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [sections, setSections] = useState<ContentSection[]>([]);
   const [editingSection, setEditingSection] = useState<string | null>(null);
   const [formData, setFormData] = useState<any>({});
@@ -153,9 +155,18 @@ const ContentManagement: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Gestão de Conteúdo</h1>
-        <p className="text-gray-600">Edite o conteúdo das páginas do site</p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Gestão de Conteúdo</h1>
+          <p className="text-gray-600">Edite o conteúdo das páginas do site</p>
+        </div>
+        <button
+          onClick={() => navigate('/content/about-kari')}
+          className="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center"
+        >
+          <FiUser className="w-5 h-5 mr-2" />
+          Editar "Quem é Kari"
+        </button>
       </div>
 
       {/* Content Sections */}

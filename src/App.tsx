@@ -17,6 +17,7 @@ import ParticipantList from './pages/Participants/ParticipantList';
 import VotingDashboard from './pages/Voting/VotingDashboard';
 import WinnerManagement from './pages/Winners/WinnerManagement';
 import ContentManagement from './pages/Content/ContentManagement';
+import AboutKariEditor from './pages/Content/AboutKariEditor';
 import UserManagement from './pages/Users/UserManagement';
 import TestimonialList from './pages/Testimonials/TestimonialList';
 import TestimonialForm from './pages/Testimonials/TestimonialForm';
@@ -69,6 +70,7 @@ function App() {
               
               {/* Content Routes */}
               <Route path="content" element={<ContentManagement />} />
+              <Route path="content/about-kari" element={<AboutKariEditor />} />
               
               {/* Users Routes */}
               <Route path="users" element={<UserManagement />} />
