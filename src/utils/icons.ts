@@ -63,6 +63,7 @@ export const FiActivity = makeIcon(FiIcons.FiActivity);
 export const FiStar = makeIcon(FiIcons.FiStar);
 export const FiTag = makeIcon(FiIcons.FiTag);
 export const FiGift = makeIcon(FiIcons.FiGift);
+export const FiInfo = makeIcon(FiIcons.FiInfo);
 
 // Export all other icons that might be needed
 export * from 'react-icons/ai';
